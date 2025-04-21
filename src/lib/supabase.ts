@@ -1,10 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// Hard-coded values from the Supabase connection
-// These are public values that are safe to include in client-side code
-const supabaseUrl = 'https://tzjkwfzvaqwlgbfwprgz.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR6amt3Znp2YXF3bGdiZndwcmd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTMyNTI0MjMsImV4cCI6MjAyODgyODQyM30.hsPisEq_exMDrNdIYMWVDsoQ2MPkYDhc6M0bnbR7EB0';
+// Supabase connection details
+const supabaseUrl = 'https://elofhyypbxsdxlhfdefp.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsb2ZoeXlwYnhzZHhsaGZkZWZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUyNTgwODUsImV4cCI6MjA2MDgzNDA4NX0.QAGzXuEFsTJ-szpl5ykatmJ3cdQNGAQ-h9koUSQUFkI';
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseKey);

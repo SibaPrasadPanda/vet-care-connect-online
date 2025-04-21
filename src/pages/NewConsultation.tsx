@@ -58,9 +58,10 @@ const NewConsultation = () => {
         userId: user.id,
         petName: data.petName,
         symptoms: data.symptoms,
+        hasAttachments: data.attachments && data.attachments instanceof FileList && data.attachments.length > 0
       });
       
-      // First, create the consultation record
+      // Create the consultation record
       const { error: consultationError, data: newConsultation } = await supabase
         .from('consultations')
         .insert([
@@ -81,27 +82,14 @@ const NewConsultation = () => {
 
       console.log("Successfully created consultation:", newConsultation);
 
-      // Mock successful submission for demo purposes
-      // In a real app, comment this section out and use the actual Supabase connection
-      // Uncomment this section for demo purposes only
-      toast({
-        title: "Consultation Request Submitted",
-        description: "A veterinarian will review your case shortly."
-      });
-      
-      navigate('/consultations');
-      return;
-      
-      // The code below would handle file uploads in a production environment
       // Handle file uploads if any
-      if (data.attachments && data.attachments.length > 0) {
-        // Type assertion to FileList
+      if (data.attachments && data.attachments instanceof FileList && data.attachments.length > 0) {
         const fileList = data.attachments as FileList;
         const files = Array.from(fileList);
         
         try {
-          // First check if the bucket exists
-          const { data: bucketData, error: bucketError } = await supabase
+          // Check if bucket exists
+          const { error: bucketError } = await supabase
             .storage
             .getBucket('consultation-attachments');
             
@@ -121,20 +109,22 @@ const NewConsultation = () => {
           }
           
           const uploadPromises = files.map(async (file) => {
-            // Now TypeScript knows file is a File object with name property
             const fileExt = file.name.split('.').pop();
             const filePath = `${user.id}/${newConsultation.id}/${Math.random()}.${fileExt}`;
             
-            // Convert File to proper type for Supabase upload
             const { error: uploadError } = await supabase.storage
               .from('consultation-attachments')
-              .upload(filePath, file as File);
+              .upload(filePath, file);
 
-            if (uploadError) throw uploadError;
+            if (uploadError) {
+              console.error('Error uploading file:', uploadError);
+              throw uploadError;
+            }
             return filePath;
           });
 
           await Promise.all(uploadPromises);
+          console.log("Files uploaded successfully");
         } catch (fileError) {
           console.error('Error uploading files:', fileError);
           // Continue even if file upload fails
@@ -154,8 +144,12 @@ const NewConsultation = () => {
       navigate('/consultations');
     } catch (error) {
       console.error('Error submitting consultation:', error);
-      // Check if it's a connection error
-      if (error instanceof TypeError && (error as TypeError).message.includes('Failed to fetch')) {
+      
+      // Handle connection errors
+      if (error instanceof Error && error.message.includes('Failed to fetch') || 
+          error instanceof TypeError && error.message.includes('network') ||
+          error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        
         setConnectionError(true);
         toast({
           title: "Connection Error",
