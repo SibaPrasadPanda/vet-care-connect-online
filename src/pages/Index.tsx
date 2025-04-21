@@ -2,7 +2,7 @@
 import { Layout } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Paw, Clock, Users, FileText } from 'lucide-react';
+import { PawPrint, Clock, Users, FileText } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,7 +14,7 @@ const Index = () => {
       {/* Hero Section */}
       <section className="vet-accent-gradient text-white py-20">
         <div className="container px-4 text-center">
-          <Paw className="inline-block h-14 w-14 mb-4" />
+          <PawPrint className="inline-block h-14 w-14 mb-4" />
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             Quality Veterinary Care From Anywhere
           </h1>

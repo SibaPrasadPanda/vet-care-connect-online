@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
-import { Paw } from 'lucide-react';
+import { PawPrint } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -44,7 +44,7 @@ const Login = () => {
     <Layout>
       <div className="container max-w-md py-12">
         <div className="flex flex-col items-center mb-8">
-          <Paw className="h-12 w-12 text-vet-primary mb-2" />
+          <PawPrint className="h-12 w-12 text-vet-primary mb-2" />
           <h1 className="text-2xl font-bold">Login to VetCare Connect</h1>
           <p className="text-muted-foreground text-center mt-2">
             Enter your credentials to access your account

@@ -22,7 +22,7 @@ import {
   MapPin,
   Settings,
   UserCircle,
-  Paw
+  PawPrint
 } from 'lucide-react';
 
 export const DashboardSidebar = () => {
@@ -48,7 +48,7 @@ export const DashboardSidebar = () => {
       {
         title: 'My Pets',
         url: '/pets',
-        icon: Paw,
+        icon: PawPrint,
       },
       {
         title: 'Consultations',
@@ -132,9 +132,9 @@ export const DashboardSidebar = () => {
   const items = getMenuItems();
 
   return (
-    <Sidebar defaultCollapsed={false}>
+    <Sidebar>
       <SidebarHeader className="flex items-center px-4 py-2">
-        <Paw className="text-vet-primary h-6 w-6 mr-2" />
+        <PawPrint className="text-vet-primary h-6 w-6 mr-2" />
         <span className="text-lg font-medium">VetCare</span>
       </SidebarHeader>
       <SidebarContent>

@@ -1,6 +1,6 @@
 
 import { Link } from 'react-router-dom';
-import { Paw, Facebook, Twitter, Instagram, Mail } from 'lucide-react';
+import { Facebook, Twitter, Instagram, Mail, PawPrint } from 'lucide-react';
 
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -11,7 +11,7 @@ export const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
-              <Paw className="h-6 w-6 text-vet-primary" />
+              <PawPrint className="h-6 w-6 text-vet-primary" />
               <span className="text-lg font-bold">VetCare Connect</span>
             </Link>
             <p className="text-muted-foreground text-sm">

@@ -8,7 +8,7 @@ import {
   LogOut, 
   Moon, 
   Sun, 
-  Paw 
+  PawPrint 
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -36,7 +36,7 @@ export const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <Paw className="h-8 w-8 text-vet-primary" />
+          <PawPrint className="h-8 w-8 text-vet-primary" />
           <span className="text-xl font-bold">VetCare Connect</span>
         </Link>
         
