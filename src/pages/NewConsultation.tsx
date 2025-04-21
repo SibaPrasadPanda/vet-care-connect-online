@@ -79,7 +79,9 @@ const NewConsultation = () => {
 
       // Handle file uploads if any
       if (data.attachments && data.attachments.length > 0) {
-        const files = Array.from(data.attachments);
+        // Type assertion to FileList
+        const fileList = data.attachments as FileList;
+        const files = Array.from(fileList);
         
         try {
           // First check if the bucket exists
@@ -103,12 +105,14 @@ const NewConsultation = () => {
           }
           
           const uploadPromises = files.map(async (file) => {
+            // Now TypeScript knows file is a File object with name property
             const fileExt = file.name.split('.').pop();
             const filePath = `${user.id}/${newConsultation.id}/${Math.random()}.${fileExt}`;
             
+            // Convert File to proper type for Supabase upload
             const { error: uploadError } = await supabase.storage
               .from('consultation-attachments')
-              .upload(filePath, file);
+              .upload(filePath, file as File);
 
             if (uploadError) throw uploadError;
             return filePath;
