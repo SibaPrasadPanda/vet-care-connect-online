@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
@@ -11,19 +11,32 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/lib/supabase";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Loader2 } from "lucide-react";
 
-type ConsultationForm = {
-  petName: string;
-  symptoms: string;
-  attachments: FileList | null;
-};
+const formSchema = z.object({
+  petName: z.string().min(1, "Pet name is required"),
+  symptoms: z.string().min(10, "Please provide a detailed description of the symptoms"),
+  attachments: z.any().optional(),
+});
+
+type ConsultationForm = z.infer<typeof formSchema>;
 
 const NewConsultation = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const form = useForm<ConsultationForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const form = useForm<ConsultationForm>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      petName: "",
+      symptoms: "",
+      attachments: undefined,
+    },
+  });
 
   const onSubmit = async (data: ConsultationForm) => {
     if (!user) {
@@ -37,6 +50,12 @@ const NewConsultation = () => {
 
     setIsSubmitting(true);
     try {
+      console.log("Submitting consultation with data:", {
+        userId: user.id,
+        petName: data.petName,
+        symptoms: data.symptoms,
+      });
+      
       // First, create the consultation record
       const { error: consultationError, data: newConsultation } = await supabase
         .from('consultations')
@@ -51,24 +70,60 @@ const NewConsultation = () => {
         .select()
         .single();
 
-      if (consultationError) throw consultationError;
+      if (consultationError) {
+        console.error('Error submitting consultation:', consultationError);
+        throw consultationError;
+      }
+
+      console.log("Successfully created consultation:", newConsultation);
 
       // Handle file uploads if any
       if (data.attachments && data.attachments.length > 0) {
         const files = Array.from(data.attachments);
-        const uploadPromises = files.map(async (file) => {
-          const fileExt = file.name.split('.').pop();
-          const filePath = `${user.id}/${newConsultation.id}/${Math.random()}.${fileExt}`;
+        
+        try {
+          // First check if the bucket exists
+          const { data: bucketData, error: bucketError } = await supabase
+            .storage
+            .getBucket('consultation-attachments');
+            
+          // If bucket doesn't exist, create it
+          if (bucketError) {
+            console.log('Bucket does not exist, attempting to create it');
+            const { error } = await supabase
+              .storage
+              .createBucket('consultation-attachments', {
+                public: false,
+              });
+              
+            if (error) {
+              console.error('Error creating bucket:', error);
+              throw error;
+            }
+          }
           
-          const { error: uploadError } = await supabase.storage
-            .from('consultation-attachments')
-            .upload(filePath, file);
+          const uploadPromises = files.map(async (file) => {
+            const fileExt = file.name.split('.').pop();
+            const filePath = `${user.id}/${newConsultation.id}/${Math.random()}.${fileExt}`;
+            
+            const { error: uploadError } = await supabase.storage
+              .from('consultation-attachments')
+              .upload(filePath, file);
 
-          if (uploadError) throw uploadError;
-          return filePath;
-        });
+            if (uploadError) throw uploadError;
+            return filePath;
+          });
 
-        await Promise.all(uploadPromises);
+          await Promise.all(uploadPromises);
+        } catch (fileError) {
+          console.error('Error uploading files:', fileError);
+          // Continue even if file upload fails
+          toast({
+            title: "Warning",
+            description: "Consultation was created, but file uploads failed.",
+            variant: "destructive",
+          });
+        }
       }
 
       toast({
@@ -110,6 +165,7 @@ const NewConsultation = () => {
                       <FormControl>
                         <Input placeholder="Enter your pet's name" {...field} />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -127,6 +183,7 @@ const NewConsultation = () => {
                           {...field}
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -151,7 +208,14 @@ const NewConsultation = () => {
                 />
 
                 <Button type="submit" disabled={isSubmitting}>
-                  Submit Consultation Request
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Submit Consultation Request"
+                  )}
                 </Button>
               </form>
             </Form>

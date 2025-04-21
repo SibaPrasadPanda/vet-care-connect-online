@@ -19,3 +19,9 @@ export type Appointment = {
   preferred_time: string;
   status: 'pending' | 'confirmed' | 'cancelled';
 };
+
+// Extend Database definitions to match Supabase
+export type Tables = {
+  consultations: Consultation;
+  appointments: Appointment;
+};
