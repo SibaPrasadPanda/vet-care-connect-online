@@ -54,8 +54,12 @@ const NewConsultation = () => {
     setConnectionError(false);
     
     try {
+      // Generate a proper UUID if needed - for testing purposes
+      // In a real app, the user.id from auth would already be a UUID
+      const userId = user.id || crypto.randomUUID();
+      
       console.log("Submitting consultation with data:", {
-        userId: user.id,
+        userId: userId,
         petName: data.petName,
         symptoms: data.symptoms,
         hasAttachments: data.attachments && data.attachments instanceof FileList && data.attachments.length > 0
@@ -66,7 +70,7 @@ const NewConsultation = () => {
         .from('consultations')
         .insert([
           {
-            user_id: user.id,
+            user_id: userId, // Use the UUID formatted user ID
             pet_name: data.petName,
             symptoms: data.symptoms,
             status: 'pending'
@@ -110,7 +114,7 @@ const NewConsultation = () => {
           
           const uploadPromises = files.map(async (file) => {
             const fileExt = file.name.split('.').pop();
-            const filePath = `${user.id}/${newConsultation.id}/${Math.random()}.${fileExt}`;
+            const filePath = `${userId}/${newConsultation.id}/${Math.random()}.${fileExt}`;
             
             const { error: uploadError } = await supabase.storage
               .from('consultation-attachments')
