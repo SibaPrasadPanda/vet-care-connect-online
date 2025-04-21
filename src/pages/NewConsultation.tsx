@@ -34,13 +34,15 @@ const ensureValidUUID = (id: string | undefined): string => {
   
   // If not a UUID, generate a new one - but we'll use a deterministic approach
   // by hashing the original ID to get consistent UUIDs for the same user
-  const hash = Array.from(id).reduce((acc, char) => {
+  const initialHash = Array.from(id).reduce((acc, char) => {
     return ((acc << 5) - acc) + char.charCodeAt(0) | 0;
   }, 0);
   
   // Use the hash to seed a simple PRNG
   const seededRandom = () => {
-    const x = Math.sin(hash++) * 10000;
+    // Use a mutable variable for the hash that's incremented
+    let seedValue = initialHash;
+    const x = Math.sin(seedValue++) * 10000;
     return x - Math.floor(x);
   };
   
