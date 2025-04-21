@@ -24,6 +24,34 @@ const formSchema = z.object({
 
 type ConsultationForm = z.infer<typeof formSchema>;
 
+// Function to ensure we always have a valid UUID
+const ensureValidUUID = (id: string | undefined): string => {
+  if (!id) return crypto.randomUUID();
+  
+  // Check if the id is already a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+  
+  // If not a UUID, generate a new one - but we'll use a deterministic approach
+  // by hashing the original ID to get consistent UUIDs for the same user
+  const hash = Array.from(id).reduce((acc, char) => {
+    return ((acc << 5) - acc) + char.charCodeAt(0) | 0;
+  }, 0);
+  
+  // Use the hash to seed a simple PRNG
+  const seededRandom = () => {
+    const x = Math.sin(hash++) * 10000;
+    return x - Math.floor(x);
+  };
+  
+  // Generate UUID v4-like string with some determinism based on the original ID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.floor(seededRandom() * 16);
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 const NewConsultation = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -54,9 +82,8 @@ const NewConsultation = () => {
     setConnectionError(false);
     
     try {
-      // Generate a proper UUID if needed - for testing purposes
-      // In a real app, the user.id from auth would already be a UUID
-      const userId = user.id || crypto.randomUUID();
+      // Generate a proper UUID using our helper function
+      const userId = ensureValidUUID(user.id);
       
       console.log("Submitting consultation with data:", {
         userId: userId,
