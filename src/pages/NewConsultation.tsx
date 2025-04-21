@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
@@ -8,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 type ConsultationForm = {
   petName: string;
@@ -17,18 +20,73 @@ type ConsultationForm = {
 
 const NewConsultation = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const form = useForm<ConsultationForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (data: ConsultationForm) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create a consultation",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
-    // In a real app, we would submit to an API
-    console.log("Consultation data:", data);
-    toast({
-      title: "Consultation Request Submitted",
-      description: "A veterinarian will review your case shortly."
-    });
-    setIsSubmitting(false);
+    try {
+      // First, create the consultation record
+      const { error: consultationError, data: newConsultation } = await supabase
+        .from('consultations')
+        .insert([
+          {
+            user_id: user.id,
+            pet_name: data.petName,
+            symptoms: data.symptoms,
+            status: 'pending'
+          }
+        ])
+        .select()
+        .single();
+
+      if (consultationError) throw consultationError;
+
+      // Handle file uploads if any
+      if (data.attachments && data.attachments.length > 0) {
+        const files = Array.from(data.attachments);
+        const uploadPromises = files.map(async (file) => {
+          const fileExt = file.name.split('.').pop();
+          const filePath = `${user.id}/${newConsultation.id}/${Math.random()}.${fileExt}`;
+          
+          const { error: uploadError } = await supabase.storage
+            .from('consultation-attachments')
+            .upload(filePath, file);
+
+          if (uploadError) throw uploadError;
+          return filePath;
+        });
+
+        await Promise.all(uploadPromises);
+      }
+
+      toast({
+        title: "Consultation Request Submitted",
+        description: "A veterinarian will review your case shortly."
+      });
+
+      navigate('/consultations');
+    } catch (error) {
+      console.error('Error submitting consultation:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit consultation. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
@@ -8,6 +9,8 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Calendar } from "@/components/ui/calendar";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
 
 type AppointmentForm = {
   petName: string;
@@ -18,18 +21,63 @@ type AppointmentForm = {
 
 const ScheduleAppointment = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const form = useForm<AppointmentForm>();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit = async (data: AppointmentForm) => {
+    if (!user) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to schedule an appointment",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!data.preferredDate) {
+      toast({
+        title: "Error",
+        description: "Please select a preferred date",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
-    // In a real app, we would submit to an API
-    console.log("Appointment data:", data);
-    toast({
-      title: "Appointment Request Submitted",
-      description: "We'll confirm your appointment time shortly."
-    });
-    setIsSubmitting(false);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .insert([
+          {
+            user_id: user.id,
+            pet_name: data.petName,
+            reason: data.reason,
+            preferred_date: data.preferredDate.toISOString().split('T')[0],
+            preferred_time: data.preferredTime,
+            status: 'pending'
+          }
+        ]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Appointment Request Submitted",
+        description: "We'll confirm your appointment time shortly."
+      });
+
+      navigate('/appointments');
+    } catch (error) {
+      console.error('Error scheduling appointment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to schedule appointment. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
