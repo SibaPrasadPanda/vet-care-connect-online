@@ -1,0 +1,502 @@
+
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/hooks/useAuth';
+import { Calendar, Clock, FileText, MessageSquare, Users, Activity, Plus, AlertCircle, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+const Dashboard = () => {
+  const { user } = useAuth();
+  
+  // Render different dashboards based on user role
+  const renderDashboard = () => {
+    switch (user?.role) {
+      case 'patient':
+        return <PatientDashboard />;
+      case 'doctor':
+        return <DoctorDashboard />;
+      case 'agent':
+        return <AgentDashboard />;
+      case 'admin':
+        return <AdminDashboard />;
+      default:
+        return <div>Please log in to view your dashboard.</div>;
+    }
+  };
+  
+  return (
+    <DashboardLayout>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back, {user?.name || 'User'}!
+        </p>
+      </div>
+      
+      {renderDashboard()}
+    </DashboardLayout>
+  );
+};
+
+// Patient Dashboard Component
+const PatientDashboard = () => {
+  return (
+    <div className="grid gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="bg-vet-primary text-primary-foreground">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-primary-foreground">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Button asChild variant="outline" className="w-full bg-white/20 border-white/20 hover:bg-white/30 text-white">
+                <Link to="/consultations/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Consultation
+                </Link>
+              </Button>
+              <Button asChild variant="outline" className="w-full bg-white/20 border-white/20 hover:bg-white/30 text-white">
+                <Link to="/appointments/schedule">
+                  <Calendar className="mr-2 h-4 w-4" />
+                  Schedule Appointment
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Active Consultations</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-muted-foreground">
+              You have consultations waiting for response
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Upcoming Appointments</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">1</div>
+            <p className="text-xs text-muted-foreground">
+              Next: Apr 25, 2025 - 10:30 AM
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <h2 className="text-xl font-semibold mt-6 mb-4">Recent Consultations</h2>
+      <div className="space-y-4">
+        {[
+          { 
+            id: "1", 
+            title: "Skin rash concern", 
+            date: "Apr 20, 2025", 
+            status: "active",
+            doctor: "Dr. Sarah Wilson", 
+            petName: "Max" 
+          },
+          { 
+            id: "2", 
+            title: "Follow-up on medication", 
+            date: "Apr 18, 2025", 
+            status: "active",
+            doctor: "Dr. James Brown", 
+            petName: "Bella" 
+          },
+          { 
+            id: "3", 
+            title: "Annual checkup", 
+            date: "Apr 10, 2025", 
+            status: "completed",
+            doctor: "Dr. Sarah Wilson", 
+            petName: "Max" 
+          },
+        ].map((consultation) => (
+          <Card key={consultation.id} className="hover:bg-muted/50 transition-colors">
+            <CardContent className="p-6 flex justify-between items-center">
+              <div>
+                <div className="font-medium">{consultation.title}</div>
+                <div className="text-sm text-muted-foreground">
+                  {consultation.petName} • {consultation.doctor} • {consultation.date}
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {consultation.status === "active" ? (
+                  <span className="flex items-center text-sm text-amber-600">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Active
+                  </span>
+                ) : (
+                  <span className="flex items-center text-sm text-green-600">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Complete
+                  </span>
+                )}
+                <Button asChild variant="outline" size="sm">
+                  <Link to={`/consultations/${consultation.id}`}>
+                    View
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="flex justify-center mt-4">
+        <Button asChild variant="outline">
+          <Link to="/consultations">
+            View All Consultations
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Doctor Dashboard Component
+const DoctorDashboard = () => {
+  return (
+    <div className="grid gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Pending Cases</CardTitle>
+            <AlertCircle className="h-4 w-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5</div>
+            <p className="text-xs text-muted-foreground">
+              Requires your attention
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Today's Appointments</CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3</div>
+            <p className="text-xs text-muted-foreground">
+              Next at 11:30 AM
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Field Visits Requested</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-muted-foreground">
+              Waiting for agent assignment
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Prescriptions Written</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">42</div>
+            <p className="text-xs text-muted-foreground">
+              This month
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <h2 className="text-xl font-semibold mt-6 mb-4">Urgent Cases</h2>
+      
+      <div className="space-y-4">
+        {[
+          { 
+            id: "1", 
+            title: "Severe vomiting and lethargy", 
+            date: "Apr 21, 2025 - 2 hours ago", 
+            urgency: "high",
+            owner: "Michael Thomas", 
+            petName: "Rocky", 
+            petType: "Dog" 
+          },
+          { 
+            id: "2", 
+            title: "Limping after fall", 
+            date: "Apr 21, 2025 - 4 hours ago", 
+            urgency: "medium",
+            owner: "Jennifer Adams", 
+            petName: "Whiskers", 
+            petType: "Cat" 
+          },
+        ].map((case_) => (
+          <Card key={case_.id} className="hover:bg-muted/50 transition-colors">
+            <CardContent className="p-6 flex justify-between items-center">
+              <div>
+                <div className="font-medium">{case_.title}</div>
+                <div className="text-sm text-muted-foreground">
+                  {case_.petName} ({case_.petType}) • Owner: {case_.owner} • {case_.date}
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                {case_.urgency === "high" ? (
+                  <span className="flex items-center text-sm text-red-600">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    High Priority
+                  </span>
+                ) : (
+                  <span className="flex items-center text-sm text-amber-600">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Medium Priority
+                  </span>
+                )}
+                <Button asChild variant="default" size="sm" className="bg-vet-primary hover:bg-vet-dark">
+                  <Link to={`/cases/${case_.id}`}>
+                    Review Now
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="flex justify-center mt-4">
+        <Button asChild variant="outline">
+          <Link to="/cases">
+            View All Cases
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+// Field Agent Dashboard Component
+const AgentDashboard = () => {
+  return (
+    <div className="grid gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="bg-vet-primary text-primary-foreground">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-primary-foreground">Today's Schedule</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">3 Visits</div>
+            <p className="text-sm text-primary-foreground/90 mb-4">
+              Next visit in 45 minutes
+            </p>
+            <Button asChild variant="outline" className="w-full bg-white/20 border-white/20 hover:bg-white/30 text-white">
+              <Link to="/schedule">
+                <Calendar className="mr-2 h-4 w-4" />
+                View Full Schedule
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Pending Assignments</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2</div>
+            <p className="text-xs text-muted-foreground">
+              Waiting for your confirmation
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Completed This Week</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">8</div>
+            <p className="text-xs text-muted-foreground">
+              +3 from last week
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <h2 className="text-xl font-semibold mt-6 mb-4">Upcoming Visits</h2>
+      
+      <div className="space-y-4">
+        {[
+          { 
+            id: "1", 
+            address: "123 Main St, Anytown", 
+            time: "10:30 AM", 
+            owner: "Jennifer Adams", 
+            petName: "Whiskers", 
+            petType: "Cat",
+            reason: "Follow-up examination" 
+          },
+          { 
+            id: "2", 
+            address: "456 Oak Avenue, Somecity", 
+            time: "1:15 PM", 
+            owner: "Robert Johnson", 
+            petName: "Max", 
+            petType: "Dog",
+            reason: "Vaccination and sample collection" 
+          },
+          { 
+            id: "3", 
+            address: "789 Pine Road, Otherville", 
+            time: "3:45 PM", 
+            owner: "Susan Miller", 
+            petName: "Goldie", 
+            petType: "Fish",
+            reason: "Water quality testing" 
+          },
+        ].map((visit) => (
+          <Card key={visit.id} className="hover:bg-muted/50 transition-colors">
+            <CardContent className="p-6 flex justify-between items-center">
+              <div>
+                <div className="font-medium">{visit.time} - {visit.address}</div>
+                <div className="text-sm text-muted-foreground">
+                  {visit.petName} ({visit.petType}) • Owner: {visit.owner}
+                </div>
+                <div className="text-sm">{visit.reason}</div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button asChild variant="outline" size="sm">
+                  <Link to={`/visits/${visit.id}/details`}>
+                    Details
+                  </Link>
+                </Button>
+                <Button asChild variant="default" size="sm" className="bg-vet-primary hover:bg-vet-dark">
+                  <Link to={`/visits/${visit.id}/navigate`}>
+                    Navigate
+                  </Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// Admin Dashboard Component
+const AdminDashboard = () => {
+  return (
+    <div className="grid gap-6">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">2,451</div>
+            <p className="text-xs text-muted-foreground">
+              +145 from last month
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Active Consultations</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">124</div>
+            <p className="text-xs text-muted-foreground">
+              +22% from last month
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">Field Visits Today</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">42</div>
+            <p className="text-xs text-muted-foreground">
+              Across 12 agents
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+            <CardTitle className="text-sm font-medium">System Status</CardTitle>
+            <Activity className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">Healthy</div>
+            <p className="text-xs text-muted-foreground">
+              All systems operational
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <h2 className="text-xl font-semibold mt-6 mb-4">System Overview</h2>
+      
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>User Distribution</CardTitle>
+            <CardDescription>Breakdown of user types in the system</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              [User Distribution Chart]
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Consultation Volume</CardTitle>
+            <CardDescription>Last 30 days of activity</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="h-80 flex items-center justify-center text-muted-foreground">
+              [Consultation Activity Chart]
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="flex justify-center mt-4 gap-4">
+        <Button asChild variant="outline">
+          <Link to="/reports">
+            View Reports
+          </Link>
+        </Button>
+        <Button asChild variant="default" className="bg-vet-primary hover:bg-vet-dark">
+          <Link to="/settings">
+            System Settings
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
