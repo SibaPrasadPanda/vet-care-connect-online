@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -10,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Loader2 } from "lucide-react";
@@ -107,29 +106,17 @@ const NewConsultation = () => {
     setConnectionError(false);
     
     try {
-      // Generate a proper UUID using our helper function
       const userId = ensureValidUUID(user.id);
+      const consultationId = crypto.randomUUID();
       
-      console.log("Submitting consultation with data:", {
-        userId: userId,
-        petName: data.petName,
-        symptoms: data.symptoms,
-        hasAttachments: data.attachments && data.attachments instanceof FileList && data.attachments.length > 0
-      });
+      console.log("Starting consultation submission...");
       
-      // Make sure we have a current Supabase session
-      const { data: authData } = await supabase.auth.getSession();
-      if (!authData?.session) {
-        console.log("No active Supabase session, attempting to create one");
-        await supabase.auth.signInAnonymously();
-      }
-      
-      // Create the consultation record - use upsert instead of insert for better compatibility with RLS
+      // First create the consultation record
       const { error: consultationError, data: newConsultation } = await supabase
         .from('consultations')
-        .upsert([
+        .insert([
           {
-            id: crypto.randomUUID(), // Generate a unique ID for the consultation
+            id: consultationId,
             user_id: userId,
             pet_name: data.petName,
             symptoms: data.symptoms,
@@ -140,100 +127,72 @@ const NewConsultation = () => {
         .single();
 
       if (consultationError) {
-        console.error('Error submitting consultation:', consultationError);
+        console.error('Error creating consultation:', consultationError);
         throw consultationError;
       }
 
-      console.log("Successfully created consultation:", newConsultation);
-
       // Handle file uploads if any
+      const uploadedFiles: string[] = [];
       if (data.attachments && data.attachments instanceof FileList && data.attachments.length > 0) {
-        const fileList = data.attachments as FileList;
-        const files = Array.from(fileList);
+        const files = Array.from(data.attachments);
         
-        try {
-          // Check if bucket exists
-          const { error: bucketError } = await supabase
-            .storage
-            .getBucket('consultation-attachments');
-            
-          // If bucket doesn't exist, create it
-          if (bucketError) {
-            console.log('Bucket does not exist, attempting to create it');
-            const { error } = await supabase
-              .storage
-              .createBucket('consultation-attachments', {
-                public: false,
-              });
-              
-            if (error) {
-              console.error('Error creating bucket:', error);
-              throw error;
-            }
+        for (const file of files) {
+          const fileExt = file.name.split('.').pop();
+          const filePath = `${userId}/${consultationId}/${crypto.randomUUID()}.${fileExt}`;
+          
+          const { error: uploadError, data: uploadData } = await supabase.storage
+            .from('consultation-attachments')
+            .upload(filePath, file);
+
+          if (uploadError) {
+            console.error('Error uploading file:', uploadError);
+            continue; // Continue with next file if one fails
           }
           
-          const uploadPromises = files.map(async (file) => {
-            const fileExt = file.name.split('.').pop();
-            const filePath = `${userId}/${newConsultation.id}/${Math.random()}.${fileExt}`;
-            
-            const { error: uploadError } = await supabase.storage
-              .from('consultation-attachments')
-              .upload(filePath, file);
+          if (uploadData) {
+            uploadedFiles.push(filePath);
+          }
+        }
 
-            if (uploadError) {
-              console.error('Error uploading file:', uploadError);
-              throw uploadError;
-            }
-            return filePath;
-          });
+        // Update consultation with attachment paths if any were uploaded
+        if (uploadedFiles.length > 0) {
+          const { error: updateError } = await supabase
+            .from('consultations')
+            .update({ attachments: uploadedFiles })
+            .eq('id', consultationId);
 
-          await Promise.all(uploadPromises);
-          console.log("Files uploaded successfully");
-        } catch (fileError) {
-          console.error('Error uploading files:', fileError);
-          // Continue even if file upload fails
-          toast({
-            title: "Warning",
-            description: "Consultation was created, but file uploads failed.",
-            variant: "destructive",
-          });
+          if (updateError) {
+            console.error('Error updating consultation with attachments:', updateError);
+          }
         }
       }
 
       toast({
         title: "Consultation Request Submitted",
-        description: "A veterinarian will review your case shortly."
+        description: `Successfully created consultation${uploadedFiles.length ? ' with ' + uploadedFiles.length + ' attachments' : ''}.`
       });
 
       navigate('/consultations');
     } catch (error) {
-      console.error('Error submitting consultation:', error);
+      console.error('Error in consultation submission:', error);
       
-      // Handle connection errors
-      if (error instanceof Error && error.message.includes('Failed to fetch') || 
-          error instanceof TypeError && error.message.includes('network') ||
-          error instanceof TypeError && error.message.includes('Failed to fetch')) {
-        
-        setConnectionError(true);
-        toast({
-          title: "Connection Error",
-          description: "Unable to connect to the server. Please check your internet connection and try again.",
-          variant: "destructive"
-        });
-      } else if (error instanceof Error && error.message.includes('row-level security policy')) {
-        // Handle RLS policy errors
-        setAuthError(true);
-        toast({
-          title: "Permission Error",
-          description: "You don't have permission to create consultations. Please try logging out and back in.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to submit consultation. Please try again.",
-          variant: "destructive"
-        });
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || 
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch')) {
+          setConnectionError(true);
+          toast({
+            title: "Connection Error",
+            description: "Unable to connect to the server. Please check your internet connection.",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to submit consultation",
+            variant: "destructive"
+          });
+        }
       }
     } finally {
       setIsSubmitting(false);
