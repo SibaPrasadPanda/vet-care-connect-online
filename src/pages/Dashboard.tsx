@@ -9,9 +9,13 @@ import { Link } from 'react-router-dom';
 const Dashboard = () => {
   const { user } = useAuth();
   
+  // Get user metadata safely
+  const userName = user?.user_metadata?.name || 'User';
+  const userRole = user?.user_metadata?.role || '';
+  
   // Render different dashboards based on user role
   const renderDashboard = () => {
-    switch (user?.role) {
+    switch (userRole) {
       case 'patient':
         return <PatientDashboard />;
       case 'doctor':
@@ -30,7 +34,7 @@ const Dashboard = () => {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {user?.name || 'User'}!
+          Welcome back, {userName}!
         </p>
       </div>
       

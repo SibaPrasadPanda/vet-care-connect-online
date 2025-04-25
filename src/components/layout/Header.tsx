@@ -32,6 +32,10 @@ export const Header = () => {
     }
   };
 
+  // Get user metadata safely
+  const userName = user?.user_metadata?.name || 'User';
+  const userRole = user?.user_metadata?.role || '';
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -59,8 +63,8 @@ export const Header = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <div className="flex flex-col p-2">
-                  <p className="text-sm font-medium">{user.name}</p>
-                  <p className="text-xs text-muted-foreground">{user.role}</p>
+                  <p className="text-sm font-medium">{userName}</p>
+                  <p className="text-xs text-muted-foreground">{userRole}</p>
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
