@@ -108,14 +108,15 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
         ) || [];
         setActiveConsultationsCount(activeConsultations.length);
 
-        // Count upcoming appointments (confirmed status and future date)
+        // Count upcoming appointments (pending or confirmed status and future date)
+        // Changed here to include pending appointments as well
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
         const upcomingAppointments = appointmentsData?.filter(appointment => {
           const appointmentDate = new Date(appointment.preferred_date);
           return (
-            appointment.status === "confirmed" && 
+            (appointment.status === "confirmed" || appointment.status === "pending") && 
             appointmentDate >= today
           );
         }) || [];
