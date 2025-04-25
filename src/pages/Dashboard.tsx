@@ -1,10 +1,13 @@
-
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { Calendar, Clock, FileText, MessageSquare, Users, Activity, Plus, AlertCircle, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { Consultation } from "@/types/database";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -17,7 +20,7 @@ const Dashboard = () => {
   const renderDashboard = () => {
     switch (userRole) {
       case 'patient':
-        return <PatientDashboard />;
+        return <PatientDashboard userId={user?.id} />;
       case 'doctor':
         return <DoctorDashboard />;
       case 'agent':
@@ -44,7 +47,65 @@ const Dashboard = () => {
 };
 
 // Patient Dashboard Component
-const PatientDashboard = () => {
+const PatientDashboard = ({ userId }: { userId?: string }) => {
+  const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchConsultations = async () => {
+      try {
+        if (!userId) {
+          console.log("No authenticated user found");
+          setLoading(false);
+          return;
+        }
+
+        console.log("Fetching recent consultations for user:", userId);
+        const { data, error } = await supabase
+          .from("consultations")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(3); // Only get the 3 most recent consultations
+
+        if (error) {
+          console.error("Error fetching consultations:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load recent consultations.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        console.log("Recent consultations fetched successfully:", data);
+        const typedConsultations = data?.map(item => ({
+          ...item,
+          status: item.status as "pending" | "in_progress" | "completed"
+        })) || [];
+        
+        setRecentConsultations(typedConsultations);
+        setLoading(false);
+      } catch (error) {
+        console.error("Unexpected error fetching consultations:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred.",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchConsultations();
+  }, [userId, toast]);
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div className="grid gap-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -99,61 +160,62 @@ const PatientDashboard = () => {
       
       <h2 className="text-xl font-semibold mt-6 mb-4">Recent Consultations</h2>
       <div className="space-y-4">
-        {[
-          { 
-            id: "1", 
-            title: "Skin rash concern", 
-            date: "Apr 20, 2025", 
-            status: "active",
-            doctor: "Dr. Sarah Wilson", 
-            petName: "Max" 
-          },
-          { 
-            id: "2", 
-            title: "Follow-up on medication", 
-            date: "Apr 18, 2025", 
-            status: "active",
-            doctor: "Dr. James Brown", 
-            petName: "Bella" 
-          },
-          { 
-            id: "3", 
-            title: "Annual checkup", 
-            date: "Apr 10, 2025", 
-            status: "completed",
-            doctor: "Dr. Sarah Wilson", 
-            petName: "Max" 
-          },
-        ].map((consultation) => (
-          <Card key={consultation.id} className="hover:bg-muted/50 transition-colors">
-            <CardContent className="p-6 flex justify-between items-center">
-              <div>
-                <div className="font-medium">{consultation.title}</div>
-                <div className="text-sm text-muted-foreground">
-                  {consultation.petName} • {consultation.doctor} • {consultation.date}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {consultation.status === "active" ? (
-                  <span className="flex items-center text-sm text-amber-600">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Active
-                  </span>
-                ) : (
-                  <span className="flex items-center text-sm text-green-600">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Complete
-                  </span>
-                )}
-                <Button asChild variant="outline" size="sm">
-                  <Link to={`/consultations/${consultation.id}`}>
-                    View
-                  </Link>
-                </Button>
+        {loading ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
               </div>
             </CardContent>
           </Card>
-        ))}
+        ) : recentConsultations.length > 0 ? (
+          recentConsultations.map((consultation) => (
+            <Card key={consultation.id} className="hover:bg-muted/50 transition-colors">
+              <CardContent className="p-6 flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{consultation.pet_name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Symptoms: {consultation.symptoms.substring(0, 100)}...
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {formatDate(consultation.created_at)}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  {consultation.status === "pending" ? (
+                    <span className="flex items-center text-sm text-amber-600">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Active
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Complete
+                    </span>
+                  )}
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={`/consultations/${consultation.id}`}>
+                      View
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">No consultations yet</p>
+              <Button asChild variant="outline" className="mt-4">
+                <Link to="/consultations/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Consultation
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
       
       <div className="flex justify-center mt-4">
