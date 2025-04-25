@@ -45,7 +45,13 @@ const Consultations = () => {
         }
 
         console.log("Consultations fetched successfully:", data);
-        setConsultations(data || []);
+        // Type assertion to handle the status field
+        const typedConsultations = data?.map(item => ({
+          ...item,
+          status: item.status as "pending" | "in_progress" | "completed"
+        })) || [];
+        
+        setConsultations(typedConsultations);
         setLoading(false);
       } catch (error) {
         console.error("Unexpected error fetching consultations:", error);
