@@ -72,6 +72,48 @@ export type Database = {
         }
         Relationships: []
       }
+      doctor_settings: {
+        Row: {
+          appointment_end_time: string
+          appointment_start_time: string
+          consultation_end_time: string
+          consultation_start_time: string
+          created_at: string
+          days_available: string[]
+          id: string
+          max_appointments_per_day: number
+          max_consultations_per_day: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          appointment_end_time?: string
+          appointment_start_time?: string
+          consultation_end_time?: string
+          consultation_start_time?: string
+          created_at?: string
+          days_available?: string[]
+          id?: string
+          max_appointments_per_day?: number
+          max_consultations_per_day?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          appointment_end_time?: string
+          appointment_start_time?: string
+          consultation_end_time?: string
+          consultation_start_time?: string
+          created_at?: string
+          days_available?: string[]
+          id?: string
+          max_appointments_per_day?: number
+          max_consultations_per_day?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
