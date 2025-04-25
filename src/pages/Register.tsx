@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -39,6 +40,7 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 
 const Register = () => {
   const { register, isLoading } = useAuth();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   
   const form = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
@@ -52,7 +54,14 @@ const Register = () => {
   });
   
   const onSubmit = async (data: RegisterFormData) => {
-    await register(data.name, data.email, data.password, data.role);
+    setSubmitError(null);
+    console.log('Form submitted with data:', data);
+    try {
+      await register(data.name, data.email, data.password, data.role);
+    } catch (error) {
+      console.error('Error in registration submit:', error);
+      setSubmitError(error instanceof Error ? error.message : 'Registration failed');
+    }
   };
   
   return (
@@ -67,6 +76,12 @@ const Register = () => {
         </div>
         
         <div className="bg-card border rounded-lg p-6 shadow-sm">
+          {submitError && (
+            <div className="bg-destructive/10 text-destructive p-3 rounded-md mb-4 text-sm">
+              {submitError}
+            </div>
+          )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField

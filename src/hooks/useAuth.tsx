@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      console.log('Auth state changed:', event, currentSession?.user);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -32,6 +33,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log('Current Supabase session:', currentSession?.user ? 'Exists' : 'None');
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setIsLoading(false);
@@ -70,7 +72,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (name: string, email: string, password: string, role: string) => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signUp({
+      console.log('Registering user with data:', { name, email, role });
+      
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -83,13 +87,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
+      console.log('Registration successful:', data);
+
       toast({
         title: 'Registration Successful',
-        description: 'Your account has been created. Please check your email for verification.',
+        description: 'Your account has been created.',
       });
 
-      navigate('/dashboard');
+      // We won't redirect yet - check if email confirmation is required
+      if (data.session) {
+        navigate('/dashboard');
+      } else {
+        toast({
+          title: 'Verification Required',
+          description: 'Please check your email for verification instructions.',
+        });
+        navigate('/login');
+      }
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
         title: 'Registration Failed',
         description: error instanceof Error ? error.message : 'An error occurred',
