@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,10 @@ const Dashboard = () => {
 const PatientDashboard = ({ userId }: { userId?: string }) => {
   const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
   const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
+  const [activeConsultationsCount, setActiveConsultationsCount] = useState(0);
+  const [upcomingAppointmentsCount, setUpcomingAppointmentsCount] = useState(0);
+  const [nextAppointmentDate, setNextAppointmentDate] = useState<string | null>(null);
+  const [nextAppointmentTime, setNextAppointmentTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -95,6 +100,39 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
           });
           setLoading(false);
           return;
+        }
+
+        // Count active consultations (pending or in_progress)
+        const activeConsultations = consultationsData?.filter(
+          c => c.status === "pending" || c.status === "in_progress"
+        ) || [];
+        setActiveConsultationsCount(activeConsultations.length);
+
+        // Count upcoming appointments (confirmed status and future date)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const upcomingAppointments = appointmentsData?.filter(appointment => {
+          const appointmentDate = new Date(appointment.preferred_date);
+          return (
+            appointment.status === "confirmed" && 
+            appointmentDate >= today
+          );
+        }) || [];
+        
+        setUpcomingAppointmentsCount(upcomingAppointments.length);
+        
+        // Find the next upcoming appointment
+        if (upcomingAppointments.length > 0) {
+          upcomingAppointments.sort((a, b) => {
+            const dateA = new Date(a.preferred_date);
+            const dateB = new Date(b.preferred_date);
+            return dateA.getTime() - dateB.getTime();
+          });
+          
+          const nextAppointment = upcomingAppointments[0];
+          setNextAppointmentDate(nextAppointment.preferred_date);
+          setNextAppointmentTime(nextAppointment.preferred_time);
         }
 
         console.log("Recent consultations fetched successfully:", consultationsData);
@@ -162,9 +200,9 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">{activeConsultationsCount}</div>
             <p className="text-xs text-muted-foreground">
-              You have consultations waiting for response
+              {activeConsultationsCount === 1 ? "You have a consultation" : "You have consultations"} waiting for response
             </p>
           </CardContent>
         </Card>
@@ -175,9 +213,12 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1</div>
+            <div className="text-2xl font-bold">{upcomingAppointmentsCount}</div>
             <p className="text-xs text-muted-foreground">
-              Next: Apr 25, 2025 - 10:30 AM
+              {nextAppointmentDate && nextAppointmentTime 
+                ? `Next: ${formatDate(nextAppointmentDate)} - ${nextAppointmentTime}`
+                : "No upcoming appointments"
+              }
             </p>
           </CardContent>
         </Card>
