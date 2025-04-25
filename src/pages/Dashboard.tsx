@@ -12,11 +12,9 @@ import { Consultation } from "@/types/database";
 const Dashboard = () => {
   const { user } = useAuth();
   
-  // Get user metadata safely
   const userName = user?.user_metadata?.name || 'User';
   const userRole = user?.user_metadata?.role || '';
   
-  // Render different dashboards based on user role
   const renderDashboard = () => {
     switch (userRole) {
       case 'patient':
@@ -46,7 +44,6 @@ const Dashboard = () => {
   );
 };
 
-// Patient Dashboard Component
 const PatientDashboard = ({ userId }: { userId?: string }) => {
   const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,7 +64,7 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
           .select("*")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
-          .limit(3); // Only get the 3 most recent consultations
+          .limit(3);
 
         if (error) {
           console.error("Error fetching consultations:", error);
@@ -229,7 +226,6 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
   );
 };
 
-// Doctor Dashboard Component
 const DoctorDashboard = () => {
   return (
     <div className="grid gap-6">
@@ -352,7 +348,6 @@ const DoctorDashboard = () => {
   );
 };
 
-// Field Agent Dashboard Component
 const AgentDashboard = () => {
   return (
     <div className="grid gap-6">
@@ -463,7 +458,6 @@ const AgentDashboard = () => {
   );
 };
 
-// Admin Dashboard Component
 const AdminDashboard = () => {
   return (
     <div className="grid gap-6">

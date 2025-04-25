@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useNavigate } from "react-router-dom";
@@ -45,7 +44,6 @@ const Consultations = () => {
         }
 
         console.log("Consultations fetched successfully:", data);
-        // Type assertion to handle the status field
         const typedConsultations = data?.map(item => ({
           ...item,
           status: item.status as "pending" | "in_progress" | "completed"
@@ -152,7 +150,11 @@ const Consultations = () => {
                       <Clock className="h-4 w-4 mr-1" />
                       {consultation.status === "pending" ? "Waiting for vet" : "Vet reviewing"}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/consultations/${consultation.id}`)}>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => navigate(`/consultations/${consultation.id}`)}
+                    >
                       <FileText className="h-4 w-4 mr-1" />
                       View Details
                     </Button>
