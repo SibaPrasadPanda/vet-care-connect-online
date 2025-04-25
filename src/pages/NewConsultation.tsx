@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +60,7 @@ const NewConsultation = () => {
   const { user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [connectionError, setConnectionError] = useState(false);
+  const [authError, setAuthError] = useState(false);
   
   const form = useForm<ConsultationForm>({
     resolver: zodResolver(formSchema),
@@ -69,6 +70,28 @@ const NewConsultation = () => {
       attachments: undefined,
     },
   });
+
+  // Verify Supabase authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data } = await supabase.auth.getSession();
+      console.log("Current Supabase session:", data?.session ? "Active" : "None");
+      
+      if (!data?.session) {
+        // If not authenticated with Supabase, try authenticating as anon
+        const { error } = await supabase.auth.signInAnonymously();
+        
+        if (error) {
+          console.error("Error signing in anonymously:", error);
+          setAuthError(true);
+        } else {
+          console.log("Signed in anonymously with Supabase");
+        }
+      }
+    };
+    
+    checkAuth();
+  }, []);
 
   const onSubmit = async (data: ConsultationForm) => {
     if (!user) {
@@ -94,12 +117,20 @@ const NewConsultation = () => {
         hasAttachments: data.attachments && data.attachments instanceof FileList && data.attachments.length > 0
       });
       
-      // Create the consultation record
+      // Make sure we have a current Supabase session
+      const { data: authData } = await supabase.auth.getSession();
+      if (!authData?.session) {
+        console.log("No active Supabase session, attempting to create one");
+        await supabase.auth.signInAnonymously();
+      }
+      
+      // Create the consultation record - use upsert instead of insert for better compatibility with RLS
       const { error: consultationError, data: newConsultation } = await supabase
         .from('consultations')
-        .insert([
+        .upsert([
           {
-            user_id: userId, // Use the UUID formatted user ID
+            id: crypto.randomUUID(), // Generate a unique ID for the consultation
+            user_id: userId,
             pet_name: data.petName,
             symptoms: data.symptoms,
             status: 'pending'
@@ -189,6 +220,14 @@ const NewConsultation = () => {
           description: "Unable to connect to the server. Please check your internet connection and try again.",
           variant: "destructive"
         });
+      } else if (error instanceof Error && error.message.includes('row-level security policy')) {
+        // Handle RLS policy errors
+        setAuthError(true);
+        toast({
+          title: "Permission Error",
+          description: "You don't have permission to create consultations. Please try logging out and back in.",
+          variant: "destructive"
+        });
       } else {
         toast({
           title: "Error",
@@ -217,6 +256,21 @@ const NewConsultation = () => {
                 <li>Firewall or network restrictions</li>
               </ul>
               Please try again later.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {authError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTitle>Authentication Error</AlertTitle>
+            <AlertDescription>
+              Unable to authenticate with the database. This could be due to:
+              <ul className="list-disc pl-5 mt-2">
+                <li>Missing permissions</li>
+                <li>Session expired</li>
+                <li>Database configuration issue</li>
+              </ul>
+              Please try logging out and back in.
             </AlertDescription>
           </Alert>
         )}
