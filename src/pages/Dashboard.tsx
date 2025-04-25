@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Consultation } from "@/types/database";
+import { Consultation, Appointment } from "@/types/database";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -46,11 +46,12 @@ const Dashboard = () => {
 
 const PatientDashboard = ({ userId }: { userId?: string }) => {
   const [recentConsultations, setRecentConsultations] = useState<Consultation[]>([]);
+  const [recentAppointments, setRecentAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchConsultations = async () => {
+    const fetchData = async () => {
       try {
         if (!userId) {
           console.log("No authenticated user found");
@@ -59,15 +60,15 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
         }
 
         console.log("Fetching recent consultations for user:", userId);
-        const { data, error } = await supabase
+        const { data: consultationsData, error: consultationsError } = await supabase
           .from("consultations")
           .select("*")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .limit(3);
 
-        if (error) {
-          console.error("Error fetching consultations:", error);
+        if (consultationsError) {
+          console.error("Error fetching consultations:", consultationsError);
           toast({
             title: "Error",
             description: "Failed to load recent consultations.",
@@ -77,16 +78,43 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
           return;
         }
 
-        console.log("Recent consultations fetched successfully:", data);
-        const typedConsultations = data?.map(item => ({
+        console.log("Fetching recent appointments for user:", userId);
+        const { data: appointmentsData, error: appointmentsError } = await supabase
+          .from("appointments")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(3);
+
+        if (appointmentsError) {
+          console.error("Error fetching appointments:", appointmentsError);
+          toast({
+            title: "Error",
+            description: "Failed to load recent appointments.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        console.log("Recent consultations fetched successfully:", consultationsData);
+        console.log("Recent appointments fetched successfully:", appointmentsData);
+        
+        const typedConsultations = consultationsData?.map(item => ({
           ...item,
           status: item.status as "pending" | "in_progress" | "completed"
         })) || [];
         
+        const typedAppointments = appointmentsData?.map(item => ({
+          ...item,
+          status: item.status as "pending" | "confirmed" | "cancelled"
+        })) || [];
+        
         setRecentConsultations(typedConsultations);
+        setRecentAppointments(typedAppointments);
         setLoading(false);
       } catch (error) {
-        console.error("Unexpected error fetching consultations:", error);
+        console.error("Unexpected error fetching data:", error);
         toast({
           title: "Error",
           description: "An unexpected error occurred.",
@@ -96,7 +124,7 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
       }
     };
 
-    fetchConsultations();
+    fetchData();
   }, [userId, toast]);
 
   const formatDate = (dateString: string) => {
@@ -155,72 +183,146 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
         </Card>
       </div>
       
-      <h2 className="text-xl font-semibold mt-6 mb-4">Recent Consultations</h2>
-      <div className="space-y-4">
-        {loading ? (
-          <Card>
-            <CardContent className="p-6">
-              <div className="animate-pulse space-y-4">
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-4 bg-muted rounded w-1/2"></div>
-              </div>
-            </CardContent>
-          </Card>
-        ) : recentConsultations.length > 0 ? (
-          recentConsultations.map((consultation) => (
-            <Card key={consultation.id} className="hover:bg-muted/50 transition-colors">
-              <CardContent className="p-6 flex justify-between items-center">
-                <div>
-                  <div className="font-medium">{consultation.pet_name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    Symptoms: {consultation.symptoms.substring(0, 100)}...
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatDate(consultation.created_at)}
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  {consultation.status === "pending" ? (
-                    <span className="flex items-center text-sm text-amber-600">
-                      <Clock className="h-3 w-3 mr-1" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="flex items-center text-sm text-green-600">
-                      <CheckCircle className="h-3 w-3 mr-1" />
-                      Complete
-                    </span>
-                  )}
-                  <Button asChild variant="outline" size="sm">
-                    <Link to={`/consultations/${consultation.id}`}>
-                      View
-                    </Link>
-                  </Button>
+      <div className="grid gap-6 md:grid-cols-2">
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Recent Consultations</h2>
+          {loading ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
                 </div>
               </CardContent>
             </Card>
-          ))
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground">No consultations yet</p>
-              <Button asChild variant="outline" className="mt-4">
-                <Link to="/consultations/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Consultation
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-      
-      <div className="flex justify-center mt-4">
-        <Button asChild variant="outline">
-          <Link to="/consultations">
-            View All Consultations
-          </Link>
-        </Button>
+          ) : recentConsultations.length > 0 ? (
+            <div className="space-y-4">
+              {recentConsultations.map((consultation) => (
+                <Card key={consultation.id} className="hover:bg-muted/50 transition-colors">
+                  <CardContent className="p-6 flex justify-between items-center">
+                    <div>
+                      <div className="font-medium">{consultation.pet_name}</div>
+                      <div className="text-sm text-muted-foreground">
+                        Symptoms: {consultation.symptoms.substring(0, 100)}...
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {formatDate(consultation.created_at)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      {consultation.status === "pending" ? (
+                        <span className="flex items-center text-sm text-amber-600">
+                          <Clock className="h-3 w-3 mr-1" />
+                          Active
+                        </span>
+                      ) : (
+                        <span className="flex items-center text-sm text-green-600">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Complete
+                        </span>
+                      )}
+                      <Button asChild variant="outline" size="sm">
+                        <Link to={`/consultations/${consultation.id}`}>
+                          View
+                        </Link>
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              <div className="flex justify-center mt-4">
+                <Button asChild variant="outline">
+                  <Link to="/consultations">
+                    View All Consultations
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">No consultations yet</p>
+                <Button asChild variant="outline" className="mt-4">
+                  <Link to="/consultations/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Consultation
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Recent Appointments</h2>
+          {loading ? (
+            <Card>
+              <CardContent className="p-6">
+                <div className="animate-pulse space-y-4">
+                  <div className="h-4 bg-muted rounded w-3/4"></div>
+                  <div className="h-4 bg-muted rounded w-1/2"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ) : recentAppointments.length > 0 ? (
+            <div className="space-y-4">
+              {recentAppointments.map((appointment) => (
+                <Card key={appointment.id} className="hover:bg-muted/50 transition-colors">
+                  <CardHeader className="pb-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <CardTitle className="text-xl">{appointment.pet_name}</CardTitle>
+                        <CardDescription className="flex items-center mt-1">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          {formatDate(appointment.preferred_date)}
+                          <Clock className="h-4 w-4 ml-3 mr-1" />
+                          {appointment.preferred_time}
+                        </CardDescription>
+                      </div>
+                      <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        appointment.status === "pending" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
+                        appointment.status === "confirmed" ? "bg-green-100 text-green-800 border border-green-200" :
+                        "bg-red-100 text-red-800 border border-red-200"
+                      }`}>
+                        {appointment.status === "pending" ? "Awaiting Confirmation" :
+                         appointment.status === "confirmed" ? "Confirmed" : "Cancelled"}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1">Reason</h4>
+                      <p className="text-sm">
+                        {appointment.reason.length > 100
+                          ? `${appointment.reason.substring(0, 100)}...`
+                          : appointment.reason}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              <div className="flex justify-center mt-4">
+                <Button asChild variant="outline">
+                  <Link to="/appointments">
+                    View All Appointments
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p className="text-muted-foreground">No appointments yet</p>
+                <Button asChild variant="outline" className="mt-4">
+                  <Link to="/appointments/schedule">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Schedule Appointment
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
