@@ -8,6 +8,7 @@ import { Loader2, Calendar, FileText, Clock, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Consultation } from "@/types/database";
+import { supabase } from "@/integrations/supabase/client";
 
 const Consultations = () => {
   const { user } = useAuth();
@@ -17,32 +18,48 @@ const Consultations = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // In a production app, this would fetch from Supabase
-    // For now, we're using mock data due to connection issues
-    setTimeout(() => {
-      const mockConsultations: Consultation[] = [
-        {
-          id: "1",
-          created_at: new Date().toISOString(),
-          user_id: user?.id || "unknown",
-          pet_name: "Rex",
-          symptoms: "Coughing and sneezing for 3 days",
-          status: "pending"
-        },
-        {
-          id: "2",
-          created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-          user_id: user?.id || "unknown",
-          pet_name: "Bella",
-          symptoms: "Loss of appetite and lethargy",
-          status: "in_progress"
+    const fetchConsultations = async () => {
+      try {
+        if (!user?.id) {
+          console.log("No authenticated user found");
+          setLoading(false);
+          return;
         }
-      ];
-      
-      setConsultations(mockConsultations);
-      setLoading(false);
-    }, 800);
-  }, [user]);
+
+        console.log("Fetching consultations for user:", user.id);
+        const { data, error } = await supabase
+          .from("consultations")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Error fetching consultations:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load consultations. Please try again later.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
+        console.log("Consultations fetched successfully:", data);
+        setConsultations(data || []);
+        setLoading(false);
+      } catch (error) {
+        console.error("Unexpected error fetching consultations:", error);
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again later.",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchConsultations();
+  }, [user, toast]);
 
   const getStatusBadgeClass = (status: string) => {
     switch(status) {
