@@ -111,8 +111,11 @@ const checkAvailableDoctors = async () => {
     
     // Check each doctor's availability
     doctors.forEach(doctor => {
-      // Use optional chaining to safely access the email property
-      const doctorEmail = doctor.user?.email || 'unknown';
+      // Handle doctor.user being potentially a SelectQueryError or null
+      const doctorEmail = typeof doctor.user === 'object' && doctor.user !== null && 'email' in doctor.user 
+        ? doctor.user.email 
+        : 'unknown';
+        
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       
       console.log(`\nDoctor ${doctorEmail}:`);
@@ -241,8 +244,11 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
     let reasons = [];
     
     for (const doctor of doctors) {
-      // Use optional chaining to safely access the email property
-      const doctorEmail = doctor.user?.email || 'unknown';
+      // Handle doctor.user being potentially a SelectQueryError or null
+      const doctorEmail = typeof doctor.user === 'object' && doctor.user !== null && 'email' in doctor.user 
+        ? doctor.user.email 
+        : 'unknown';
+        
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       const isWithinConsultationHours = 
         currentTime >= doctor.consultation_start_time && 
