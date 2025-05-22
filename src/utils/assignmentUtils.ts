@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -41,7 +40,7 @@ export const assignSingleItem = async () => {
         
         return { 
           success: true, 
-          message: "No available doctors at the moment. An admin will review and assign soon." 
+          message: "No available doctors at the moment. An admin will review soon." 
         };
       }
     }
@@ -111,11 +110,15 @@ const checkAvailableDoctors = async () => {
     
     // Check each doctor's availability
     doctors.forEach(doctor => {
-      // Handle doctor.user being potentially a SelectQueryError or null
-      const doctorEmail = typeof doctor.user === 'object' && doctor.user !== null && 'email' in doctor.user 
-        ? doctor.user.email 
-        : 'unknown';
-        
+      // Ensure doctor.user is an object with an email property
+      let doctorEmail = 'unknown';
+      if (doctor.user && 
+          typeof doctor.user === 'object' && 
+          doctor.user !== null && 
+          'email' in doctor.user) {
+        doctorEmail = doctor.user.email;
+      }
+      
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       
       console.log(`\nDoctor ${doctorEmail}:`);
@@ -244,11 +247,15 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
     let reasons = [];
     
     for (const doctor of doctors) {
-      // Handle doctor.user being potentially a SelectQueryError or null
-      const doctorEmail = typeof doctor.user === 'object' && doctor.user !== null && 'email' in doctor.user 
-        ? doctor.user.email 
-        : 'unknown';
-        
+      // Ensure doctor.user is an object with an email property
+      let doctorEmail = 'unknown';
+      if (doctor.user && 
+          typeof doctor.user === 'object' && 
+          doctor.user !== null && 
+          'email' in doctor.user) {
+        doctorEmail = doctor.user.email;
+      }
+      
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       const isWithinConsultationHours = 
         currentTime >= doctor.consultation_start_time && 
