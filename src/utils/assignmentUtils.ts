@@ -1,4 +1,17 @@
-
+interface DoctorUser {
+  email: string;
+  raw_user_meta_data: any;
+}
+interface DoctorSettings {
+  user_id: string;
+  days_available: string[];
+  consultation_start_time: string | null;
+  consultation_end_time: string | null;
+  appointment_start_time: string | null;
+  appointment_end_time: string | null;
+  max_consultations_per_day: number;
+  user: DoctorUser | null;
+}
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -117,7 +130,7 @@ const checkAvailableDoctors = async () => {
           typeof doctor.user === 'object' && 
           doctor.user !== null && 
           'email' in doctor.user) {
-        doctorEmail = doctor.user.email;
+        doctorEmail = doctor.user?.email;
       }
       
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
@@ -267,7 +280,7 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
           typeof doctor.user === 'object' && 
           doctor.user !== null && 
           'email' in doctor.user) {
-        doctorEmail = doctor.user.email;
+        doctorEmail = doctor.user?.email;
       }
       
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
