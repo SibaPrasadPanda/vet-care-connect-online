@@ -32,13 +32,14 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
         throw error;
       }
       
-      // Safely check and convert the data
+      // Process the returned data
       if (data && typeof data === 'object' && !Array.isArray(data)) {
-        // Verify that the data has the expected properties
+        // Check if the data has the expected properties
         if ('consultations' in data && 'appointments' in data) {
+          // Convert the values to numbers
           const typedData: AssignmentResult = {
-            consultations: Number(data.consultations),
-            appointments: Number(data.appointments)
+            consultations: Number(data.consultations || 0),
+            appointments: Number(data.appointments || 0)
           };
           
           setResults(typedData);

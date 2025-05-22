@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Consultation, Appointment } from "@/types/database";
 import { AdminDashboard } from './AdminDashboard';
+import { assignSingleItem } from '@/utils/assignmentUtils';
 
 // New function to assign pending consultations/appointments to doctors
 const assignToAvailableDoctors = async () => {
@@ -187,6 +188,84 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  // This is what we'd modify in the actual implementation - when using forms for consultation or appointment creation
+  // We'd need to add these functions to the corresponding submission handlers in NewConsultation.tsx and ScheduleAppointment.tsx
+  const createConsultation = async (consultationData: any) => {
+    try {
+      // Insert the consultation
+      const { data, error } = await supabase
+        .from('consultations')
+        .insert([{ ...consultationData, user_id: userId, status: 'pending' }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Try to auto-assign to an available doctor
+      const { success, message } = await assignSingleItem();
+      
+      if (success) {
+        toast({
+          title: "Consultation Created",
+          description: message,
+        });
+      } else {
+        toast({
+          title: "Consultation Created",
+          description: "Your consultation has been received and will be assigned to a doctor soon.",
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Error creating consultation:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create consultation. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+  
+  const scheduleAppointment = async (appointmentData: any) => {
+    try {
+      // Insert the appointment
+      const { data, error } = await supabase
+        .from('appointments')
+        .insert([{ ...appointmentData, user_id: userId, status: 'pending' }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      // Try to auto-assign to an available doctor
+      const { success, message } = await assignSingleItem();
+      
+      if (success) {
+        toast({
+          title: "Appointment Scheduled",
+          description: message,
+        });
+      } else {
+        toast({
+          title: "Appointment Scheduled",
+          description: "Your appointment has been received and will be assigned to a doctor soon.",
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error("Error scheduling appointment:", error);
+      toast({
+        title: "Error",
+        description: "Failed to schedule appointment. Please try again.",
+        variant: "destructive",
+      });
+      return null;
+    }
   };
 
   return (

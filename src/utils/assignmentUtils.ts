@@ -80,3 +80,49 @@ export const isAutoAssignmentEnabled = async (): Promise<boolean> => {
  * The function doesn't currently check the time constraints (start_time and end_time)
  * This would need to be modified in the database function.
  */
+
+/**
+ * Automatically tries to assign a newly created consultation to an available doctor.
+ * This can be called right after a patient creates a consultation.
+ * 
+ * @param consultationId - The ID of the newly created consultation
+ * @returns Whether the assignment was successful
+ */
+export const autoAssignConsultation = async (consultationId: string): Promise<boolean> => {
+  try {
+    const isEnabled = await isAutoAssignmentEnabled();
+    if (!isEnabled) {
+      console.log("Automatic assignment is disabled");
+      return false;
+    }
+    
+    const result = await assignSingleItem();
+    return result.success;
+  } catch (error) {
+    console.error("Error auto-assigning consultation:", error);
+    return false;
+  }
+};
+
+/**
+ * Automatically tries to assign a newly created appointment to an available doctor.
+ * This can be called right after a patient schedules an appointment.
+ * 
+ * @param appointmentId - The ID of the newly created appointment
+ * @returns Whether the assignment was successful
+ */
+export const autoAssignAppointment = async (appointmentId: string): Promise<boolean> => {
+  try {
+    const isEnabled = await isAutoAssignmentEnabled();
+    if (!isEnabled) {
+      console.log("Automatic assignment is disabled");
+      return false;
+    }
+    
+    const result = await assignSingleItem();
+    return result.success;
+  } catch (error) {
+    console.error("Error auto-assigning appointment:", error);
+    return false;
+  }
+};
