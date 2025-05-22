@@ -26,12 +26,20 @@ const Appointments = () => {
           return;
         }
 
-        console.log("Fetching appointments for user:", user.id);
-        const { data, error } = await supabase
+        const userRole = user?.user_metadata?.role;
+        let query = supabase
           .from("appointments")
-          .select("*")
-          .eq("user_id", user.id)
+          .select("*, doctor:doctor_id(id, user_metadata->name)")
           .order("created_at", { ascending: false });
+
+        // Filter by user role
+        if (userRole === 'patient') {
+          query = query.eq("user_id", user.id);
+        } else if (userRole === 'doctor') {
+          query = query.eq("doctor_id", user.id);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
           console.error("Error fetching appointments:", error);
@@ -104,11 +112,15 @@ const Appointments = () => {
   return (
     <DashboardLayout>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">My Appointments</h1>
-        <Button onClick={() => navigate("/appointments/schedule")}>
-          <Plus className="mr-2 h-4 w-4" />
-          Schedule Appointment
-        </Button>
+        <h1 className="text-3xl font-bold">
+          {user?.user_metadata?.role === 'doctor' ? 'Assigned Appointments' : 'My Appointments'}
+        </h1>
+        {user?.user_metadata?.role === 'patient' && (
+          <Button onClick={() => navigate("/appointments/schedule")}>
+            <Plus className="mr-2 h-4 w-4" />
+            Schedule Appointment
+          </Button>
+        )}
       </div>
       
       {loading ? (

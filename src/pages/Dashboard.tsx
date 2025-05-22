@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,26 @@ import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Consultation, Appointment } from "@/types/database";
+import { AdminDashboard } from './AdminDashboard';
+
+// New function to assign pending consultations/appointments to doctors
+const assignToAvailableDoctors = async () => {
+  try {
+    // Call the Supabase function to assign consultations and appointments
+    const { data, error } = await supabase.rpc('assign_pending_to_doctors');
+    
+    if (error) {
+      console.error("Error assigning to doctors:", error);
+      return false;
+    }
+    
+    console.log("Assignment results:", data);
+    return true;
+  } catch (error) {
+    console.error("Unexpected error during assignment:", error);
+    return false;
+  }
+};
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -371,6 +390,84 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
 };
 
 const DoctorDashboard = () => {
+  const { user } = useAuth();
+  const [pendingCases, setPendingCases] = useState(0);
+  const [todayAppointments, setTodayAppointments] = useState(0);
+  const [nextAppointmentTime, setNextAppointmentTime] = useState(null);
+  const [urgentCases, setUrgentCases] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchDoctorData = async () => {
+      if (!user?.id) return;
+
+      try {
+        // Fetch assigned consultations count
+        const { data: consultations, error: consultationsError } = await supabase
+          .from("consultations")
+          .select("*")
+          .eq("doctor_id", user.id)
+          .eq("status", "pending");
+
+        if (consultationsError) throw consultationsError;
+        
+        // Fetch today's appointments
+        const today = new Date().toISOString().split('T')[0];
+        const { data: appointments, error: appointmentsError } = await supabase
+          .from("appointments")
+          .select("*")
+          .eq("doctor_id", user.id)
+          .eq("preferred_date", today)
+          .order("preferred_time", { ascending: true });
+
+        if (appointmentsError) throw appointmentsError;
+        
+        // Update state with fetched data
+        setPendingCases(consultations?.length || 0);
+        setTodayAppointments(appointments?.length || 0);
+        
+        if (appointments && appointments.length > 0) {
+          setNextAppointmentTime(appointments[0].preferred_time);
+        }
+        
+        // Mock urgent cases data for now
+        setUrgentCases([
+          { 
+            id: "1", 
+            title: "Severe vomiting and lethargy", 
+            date: "Apr 21, 2025 - 2 hours ago", 
+            urgency: "high",
+            owner: "Michael Thomas", 
+            petName: "Rocky", 
+            petType: "Dog" 
+          },
+          { 
+            id: "2", 
+            title: "Limping after fall", 
+            date: "Apr 21, 2025 - 4 hours ago", 
+            urgency: "medium",
+            owner: "Jennifer Adams", 
+            petName: "Whiskers", 
+            petType: "Cat" 
+          },
+        ]);
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching doctor data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load your dashboard data.",
+          variant: "destructive",
+        });
+        setLoading(false);
+      }
+    };
+
+    fetchDoctorData();
+  }, [user, toast]);
+
   return (
     <div className="grid gap-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -380,7 +477,7 @@ const DoctorDashboard = () => {
             <AlertCircle className="h-4 w-4 text-amber-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5</div>
+            <div className="text-2xl font-bold">{loading ? "..." : pendingCases}</div>
             <p className="text-xs text-muted-foreground">
               Requires your attention
             </p>
@@ -393,9 +490,9 @@ const DoctorDashboard = () => {
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">3</div>
+            <div className="text-2xl font-bold">{loading ? "..." : todayAppointments}</div>
             <p className="text-xs text-muted-foreground">
-              Next at 11:30 AM
+              {nextAppointmentTime ? `Next at ${nextAppointmentTime}` : "No appointments today"}
             </p>
           </CardContent>
         </Card>
@@ -597,107 +694,6 @@ const AgentDashboard = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
-    </div>
-  );
-};
-
-const AdminDashboard = () => {
-  return (
-    <div className="grid gap-6">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2,451</div>
-            <p className="text-xs text-muted-foreground">
-              +145 from last month
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Active Consultations</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">124</div>
-            <p className="text-xs text-muted-foreground">
-              +22% from last month
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Field Visits Today</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">42</div>
-            <p className="text-xs text-muted-foreground">
-              Across 12 agents
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">System Status</CardTitle>
-            <Activity className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Healthy</div>
-            <p className="text-xs text-muted-foreground">
-              All systems operational
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <h2 className="text-xl font-semibold mt-6 mb-4">System Overview</h2>
-      
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>User Distribution</CardTitle>
-            <CardDescription>Breakdown of user types in the system</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-80 flex items-center justify-center text-muted-foreground">
-              [User Distribution Chart]
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Consultation Volume</CardTitle>
-            <CardDescription>Last 30 days of activity</CardDescription>
-          </CardHeader>
-          <CardContent className="p-6">
-            <div className="h-80 flex items-center justify-center text-muted-foreground">
-              [Consultation Activity Chart]
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="flex justify-center mt-4 gap-4">
-        <Button asChild variant="outline">
-          <Link to="/reports">
-            View Reports
-          </Link>
-        </Button>
-        <Button asChild variant="default" className="bg-vet-primary hover:bg-vet-dark">
-          <Link to="/settings">
-            System Settings
-          </Link>
-        </Button>
       </div>
     </div>
   );
