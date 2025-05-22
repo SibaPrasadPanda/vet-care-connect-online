@@ -11,7 +11,7 @@ import {
   SidebarHeader
 } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   Calendar,
@@ -27,6 +27,7 @@ import {
 
 export const DashboardSidebar = () => {
   const { user } = useAuth();
+  const location = useLocation();
   
   // Define menu items based on role
   const getMenuItems = () => {
@@ -115,11 +116,15 @@ export const DashboardSidebar = () => {
     ];
     
     // Return appropriate items for the current user role
-    switch(user?.role) {
+    switch(user?.user_metadata?.role) {
       case 'patient':
         return [...baseItems, ...patientItems];
       case 'doctor':
-        return [...baseItems, ...doctorItems];
+        return [...baseItems, ...doctorItems, {
+          title: 'Settings',
+          url: '/settings',
+          icon: Settings,
+        }];
       case 'agent':
         return [...baseItems, ...agentItems];
       case 'admin':
@@ -130,6 +135,7 @@ export const DashboardSidebar = () => {
   };
 
   const items = getMenuItems();
+  const currentPath = location.pathname;
 
   return (
     <Sidebar>
@@ -145,7 +151,10 @@ export const DashboardSidebar = () => {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <Link to={item.url}>
+                    <Link 
+                      to={item.url}
+                      className={currentPath === item.url ? "bg-muted text-primary font-medium" : "hover:bg-muted/50"}
+                    >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
