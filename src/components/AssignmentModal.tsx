@@ -32,20 +32,29 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
         throw error;
       }
       
-      // Ensure data is not null and has the expected shape
-      if (data && typeof data === 'object') {
-        const typedData = data as AssignmentResult;
-        setResults(typedData);
-        toast({
-          title: "Assignment Complete",
-          description: `Successfully assigned ${typedData.consultations || 0} consultations and ${typedData.appointments || 0} appointments to doctors.`,
-        });
-        
-        // Call the success callback after a brief delay to allow the user to see the results
-        setTimeout(() => {
-          onSuccess();
-          onClose();
-        }, 2000);
+      // Safely check and convert the data
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        // Verify that the data has the expected properties
+        if ('consultations' in data && 'appointments' in data) {
+          const typedData: AssignmentResult = {
+            consultations: Number(data.consultations),
+            appointments: Number(data.appointments)
+          };
+          
+          setResults(typedData);
+          toast({
+            title: "Assignment Complete",
+            description: `Successfully assigned ${typedData.consultations || 0} consultations and ${typedData.appointments || 0} appointments to doctors.`,
+          });
+          
+          // Call the success callback after a brief delay to allow the user to see the results
+          setTimeout(() => {
+            onSuccess();
+            onClose();
+          }, 2000);
+        } else {
+          throw new Error("Data returned from function missing required properties");
+        }
       } else {
         throw new Error("No data returned from assignment function or unexpected data format");
       }
