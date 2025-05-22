@@ -30,17 +30,22 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
         throw error;
       }
       
-      setResults(data);
-      toast({
-        title: "Assignment Complete",
-        description: `Successfully assigned ${data.consultations} consultations and ${data.appointments} appointments to doctors.`,
-      });
-      
-      // Call the success callback after a brief delay to allow the user to see the results
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 2000);
+      // Ensure data is not null before accessing properties
+      if (data) {
+        setResults(data as { consultations: number; appointments: number });
+        toast({
+          title: "Assignment Complete",
+          description: `Successfully assigned ${data.consultations || 0} consultations and ${data.appointments || 0} appointments to doctors.`,
+        });
+        
+        // Call the success callback after a brief delay to allow the user to see the results
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 2000);
+      } else {
+        throw new Error("No data returned from assignment function");
+      }
     } catch (error) {
       console.error("Error during assignment:", error);
       toast({

@@ -393,8 +393,16 @@ const DoctorDashboard = () => {
   const { user } = useAuth();
   const [pendingCases, setPendingCases] = useState(0);
   const [todayAppointments, setTodayAppointments] = useState(0);
-  const [nextAppointmentTime, setNextAppointmentTime] = useState(null);
-  const [urgentCases, setUrgentCases] = useState([]);
+  const [nextAppointmentTime, setNextAppointmentTime] = useState<string | null>(null);
+  const [urgentCases, setUrgentCases] = useState<Array<{
+    id: string;
+    title: string;
+    date: string;
+    urgency: string;
+    owner: string;
+    petName: string;
+    petType: string;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 

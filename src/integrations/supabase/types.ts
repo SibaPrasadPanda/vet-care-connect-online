@@ -11,7 +11,9 @@ export type Database = {
     Tables: {
       appointments: {
         Row: {
+          assigned_at: string | null
           created_at: string
+          doctor_id: string | null
           id: string
           pet_name: string
           preferred_date: string
@@ -21,7 +23,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
           created_at?: string
+          doctor_id?: string | null
           id?: string
           pet_name: string
           preferred_date: string
@@ -31,7 +35,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
           created_at?: string
+          doctor_id?: string | null
           id?: string
           pet_name?: string
           preferred_date?: string
@@ -44,8 +50,10 @@ export type Database = {
       }
       consultations: {
         Row: {
+          assigned_at: string | null
           attachments: string[] | null
           created_at: string
+          doctor_id: string | null
           id: string
           pet_name: string
           status: string
@@ -53,8 +61,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_at?: string | null
           attachments?: string[] | null
           created_at?: string
+          doctor_id?: string | null
           id?: string
           pet_name: string
           status: string
@@ -62,8 +72,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_at?: string | null
           attachments?: string[] | null
           created_at?: string
+          doctor_id?: string | null
           id?: string
           pet_name?: string
           status?: string
@@ -119,7 +131,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      assign_pending_to_doctors: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
