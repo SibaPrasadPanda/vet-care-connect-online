@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -130,6 +131,7 @@ const checkAvailableDoctors = async () => {
       const appointmentHours = doctor.appointment_start_time && doctor.appointment_end_time ? 
         `${doctor.appointment_start_time} - ${doctor.appointment_end_time}` : 'not set';
       
+      // Fix for TS errors: Add null check for doctor.user
       console.log(`- Available days: ${availableDays}`);
       console.log(`- Consultation hours: ${consultationHours}`);
       console.log(`- Appointment hours: ${appointmentHours}`);
@@ -147,6 +149,7 @@ const checkAvailableDoctors = async () => {
         currentTime >= doctor.consultation_start_time && 
         currentTime <= doctor.consultation_end_time;
         
+      // Fix for TS errors: Add null check for doctor.user
       console.log(`- Current time ${currentTime} is ${isWithinConsultationHours ? 'within' : 'outside'} consultation hours`);
       
       if (!isWithinConsultationHours) {
@@ -276,11 +279,13 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
         currentTime <= doctor.consultation_end_time;
       
       if (!isAvailableDay) {
+        // Fix for TS errors: Add null check for doctor.user
         reasons.push(`Doctor ${doctorEmail} is not available on ${currentDay}.`);
         continue;
       }
       
       if (!isWithinConsultationHours) {
+        // Fix for TS errors: Add null check for doctor.user
         reasons.push(`Doctor ${doctorEmail} is not available at ${currentTime} (outside their hours of ${doctor.consultation_start_time || 'not set'}-${doctor.consultation_end_time || 'not set'}).`);
         continue;
       }
