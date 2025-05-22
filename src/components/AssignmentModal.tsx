@@ -13,12 +13,14 @@ interface AssignmentModalProps {
   onSuccess: () => void;
 }
 
+interface AssignmentResult {
+  consultations: number;
+  appointments: number;
+}
+
 export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalProps) => {
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<{
-    consultations: number;
-    appointments: number;
-  } | null>(null);
+  const [results, setResults] = useState<AssignmentResult | null>(null);
   const { toast } = useToast();
 
   const handleAssign = async () => {
@@ -30,12 +32,13 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
         throw error;
       }
       
-      // Ensure data is not null before accessing properties
-      if (data) {
-        setResults(data as { consultations: number; appointments: number });
+      // Ensure data is not null and has the expected shape
+      if (data && typeof data === 'object') {
+        const typedData = data as AssignmentResult;
+        setResults(typedData);
         toast({
           title: "Assignment Complete",
-          description: `Successfully assigned ${data.consultations || 0} consultations and ${data.appointments || 0} appointments to doctors.`,
+          description: `Successfully assigned ${typedData.consultations || 0} consultations and ${typedData.appointments || 0} appointments to doctors.`,
         });
         
         // Call the success callback after a brief delay to allow the user to see the results
@@ -44,7 +47,7 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
           onClose();
         }, 2000);
       } else {
-        throw new Error("No data returned from assignment function");
+        throw new Error("No data returned from assignment function or unexpected data format");
       }
     } catch (error) {
       console.error("Error during assignment:", error);
