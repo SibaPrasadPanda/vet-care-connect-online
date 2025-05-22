@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -122,9 +123,17 @@ const checkAvailableDoctors = async () => {
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       
       console.log(`\nDoctor ${doctorEmail}:`);
-      console.log(`- Available days: ${doctor.days_available?.join(', ')}`);
-      console.log(`- Consultation hours: ${doctor.consultation_start_time} - ${doctor.consultation_end_time}`);
-      console.log(`- Appointment hours: ${doctor.appointment_start_time} - ${doctor.appointment_end_time}`);
+      
+      // Add null checks for these properties
+      const availableDays = doctor.days_available ? doctor.days_available.join(', ') : 'none';
+      const consultationHours = doctor.consultation_start_time && doctor.consultation_end_time ? 
+        `${doctor.consultation_start_time} - ${doctor.consultation_end_time}` : 'not set';
+      const appointmentHours = doctor.appointment_start_time && doctor.appointment_end_time ? 
+        `${doctor.appointment_start_time} - ${doctor.appointment_end_time}` : 'not set';
+      
+      console.log(`- Available days: ${availableDays}`);
+      console.log(`- Consultation hours: ${consultationHours}`);
+      console.log(`- Appointment hours: ${appointmentHours}`);
       console.log(`- Today is ${isAvailableDay ? 'in' : 'not in'} their available days`);
       
       if (!isAvailableDay) {
