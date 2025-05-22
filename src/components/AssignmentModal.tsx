@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, Clock, Calendar, CheckCircle } from "lucide-react";
 
 interface AssignmentModalProps {
   open: boolean;
@@ -84,7 +84,10 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
         {results ? (
           <div className="py-6">
             <div className="rounded-lg bg-muted p-4">
-              <h4 className="mb-2 font-medium">Assignment Results</h4>
+              <h4 className="mb-2 font-medium flex items-center">
+                <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                Assignment Results
+              </h4>
               <div className="space-y-1">
                 <p className="text-sm">Consultations assigned: <span className="font-medium">{results.consultations}</span></p>
                 <p className="text-sm">Appointments assigned: <span className="font-medium">{results.appointments}</span></p>
@@ -100,9 +103,16 @@ export const AssignmentModal = ({ open, onClose, onSuccess }: AssignmentModalPro
                   This process will assign all pending consultations and appointments to available doctors based on:
                 </p>
                 <ul className="text-sm text-muted-foreground mt-2 list-disc pl-5 space-y-1">
+                  <li className="flex items-center">
+                    <Calendar className="h-3 w-3 mr-2 inline" />
+                    Doctor's available days
+                  </li>
+                  <li className="flex items-center">
+                    <Clock className="h-3 w-3 mr-2 inline" />
+                    Doctor's consultation and appointment hours
+                  </li>
                   <li>Doctor's maximum consultations per day setting</li>
                   <li>Doctor's maximum appointments per day setting</li>
-                  <li>Doctor's available days and hours</li>
                   <li>Consultation and appointment creation dates (oldest first)</li>
                 </ul>
               </div>

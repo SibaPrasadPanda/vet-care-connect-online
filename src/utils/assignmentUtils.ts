@@ -70,15 +70,15 @@ export const isAutoAssignmentEnabled = async (): Promise<boolean> => {
  * 1. Gets a list of all doctors with their availability settings
  * 2. For each doctor, it checks:
  *    - If today is in their days_available array
+ *    - If the current time is within their consultation_start_time and consultation_end_time (for consultations)
+ *    - If the current time is within their appointment_start_time and appointment_end_time (for appointments)
  *    - How many consultations they're already assigned for today
  *    - How many appointments they're already assigned for today
- * 3. If the doctor hasn't reached their daily limits, it assigns pending consultations and appointments
+ * 3. If the doctor meets all criteria, it assigns pending consultations and appointments
  *    - Assigns based on creation date (oldest first)
  *    - Respects the max_consultations_per_day and max_appointments_per_day limits
+ *    - For appointments, also verifies that the preferred_time is within the doctor's appointment hours
  * 4. Returns the count of newly assigned consultations and appointments
- * 
- * The function doesn't currently check the time constraints (start_time and end_time)
- * This would need to be modified in the database function.
  */
 
 /**
