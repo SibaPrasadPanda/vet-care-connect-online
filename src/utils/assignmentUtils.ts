@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 
 /**
@@ -141,7 +140,10 @@ const checkAvailableDoctors = async () => {
         return;
       }
       
+      // Add null check for consultation_start_time and consultation_end_time
       const isWithinConsultationHours = 
+        doctor.consultation_start_time && 
+        doctor.consultation_end_time && 
         currentTime >= doctor.consultation_start_time && 
         currentTime <= doctor.consultation_end_time;
         
@@ -266,7 +268,10 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
       }
       
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
+      // Add null check for consultation_start_time and consultation_end_time
       const isWithinConsultationHours = 
+        doctor.consultation_start_time && 
+        doctor.consultation_end_time && 
         currentTime >= doctor.consultation_start_time && 
         currentTime <= doctor.consultation_end_time;
       
@@ -276,7 +281,7 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
       }
       
       if (!isWithinConsultationHours) {
-        reasons.push(`Doctor ${doctorEmail} is not available at ${currentTime} (outside their hours of ${doctor.consultation_start_time}-${doctor.consultation_end_time}).`);
+        reasons.push(`Doctor ${doctorEmail} is not available at ${currentTime} (outside their hours of ${doctor.consultation_start_time || 'not set'}-${doctor.consultation_end_time || 'not set'}).`);
         continue;
       }
       
@@ -293,7 +298,7 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
         continue;
       }
       
-      if (assignedCount && assignedCount >= doctor.max_consultations_per_day) {
+      if (assignedCount && doctor.max_consultations_per_day && assignedCount >= doctor.max_consultations_per_day) {
         reasons.push(`Doctor ${doctorEmail} has reached their daily limit of ${doctor.max_consultations_per_day} consultations.`);
         continue;
       }
