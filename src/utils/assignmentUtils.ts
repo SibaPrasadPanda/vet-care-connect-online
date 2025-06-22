@@ -31,9 +31,123 @@ export const assignSingleItem = async () => {
   }
 };
 
-const getDoctorsWithSettings = async () => {
+export const diagnoseConsultationAssignment = async (consultationId: string) => {
   try {
-    // Get doctors with their settings and user metadata
+    // Get the specific consultation
+    const { data: consultation, error: consultationError } = await supabase
+      .from("consultations")
+      .select("*")
+      .eq("id", consultationId)
+      .single();
+
+    if (consultationError) {
+      console.error("Error fetching consultation:", consultationError);
+      return { 
+        success: false, 
+        message: "Could not find consultation with the provided ID.",
+        reasons: ["Consultation ID does not exist or you don't have permission to view it."]
+      };
+    }
+
+    if (!consultation) {
+      return { 
+        success: false, 
+        message: "Consultation not found.",
+        reasons: ["No consultation exists with the provided ID."]
+      };
+    }
+
+    // Check if consultation is already assigned
+    if (consultation.doctor_id) {
+      return {
+        success: true,
+        message: `Consultation is already assigned to a doctor (ID: ${consultation.doctor_id}).`,
+        reasons: []
+      };
+    }
+
+    // Check if consultation is pending
+    if (consultation.status !== 'pending') {
+      return {
+        success: false,
+        message: `Consultation status is '${consultation.status}', not 'pending'.`,
+        reasons: [`Only pending consultations can be assigned to doctors.`]
+      };
+    }
+
+    // Get available doctors and check why this consultation isn't being assigned
+    const doctorsWithSettings = await getDoctorsWithSettings();
+    
+    if (doctorsWithSettings.length === 0) {
+      return {
+        success: false,
+        message: "No doctors found with settings configured.",
+        reasons: ["No doctors have their availability settings configured."]
+      };
+    }
+
+    const reasons: string[] = [];
+    let availableDoctorsCount = 0;
+
+    for (const doctor of doctorsWithSettings) {
+      const isAvailableForConsultation = isDoctorAvailable(doctor, 'consultation');
+      
+      if (!isAvailableForConsultation) {
+        reasons.push(`Doctor ${doctor.user?.email || 'unknown'} is not available for consultations at this time.`);
+        continue;
+      }
+
+      // Check if doctor has reached their daily consultation limit
+      const today = new Date().toISOString().split('T')[0];
+      const { data: todaysConsultations, error: countError } = await supabase
+        .from("consultations")
+        .select("id")
+        .eq("doctor_id", doctor.user_id)
+        .gte("assigned_at", `${today}T00:00:00Z`)
+        .lte("assigned_at", `${today}T23:59:59Z`);
+
+      if (countError) {
+        reasons.push(`Error checking consultation count for doctor ${doctor.user?.email || 'unknown'}.`);
+        continue;
+      }
+
+      const currentConsultations = todaysConsultations?.length || 0;
+      
+      if (currentConsultations >= doctor.max_consultations_per_day) {
+        reasons.push(`Doctor ${doctor.user?.email || 'unknown'} has reached their daily consultation limit (${doctor.max_consultations_per_day}).`);
+        continue;
+      }
+
+      availableDoctorsCount++;
+    }
+
+    if (availableDoctorsCount === 0) {
+      return {
+        success: false,
+        message: "No doctors are currently available to take this consultation.",
+        reasons: reasons
+      };
+    }
+
+    return {
+      success: false,
+      message: `${availableDoctorsCount} doctor(s) should be available, but assignment may have failed due to timing or other factors.`,
+      reasons: reasons.length > 0 ? reasons : ["Try running the assignment process again."]
+    };
+
+  } catch (error) {
+    console.error("Unexpected error during consultation diagnosis:", error);
+    return { 
+      success: false, 
+      message: "An unexpected error occurred during diagnosis.",
+      reasons: ["Please try again or contact support if the issue persists."]
+    };
+  }
+};
+
+const getDoctorsWithSettings = async (): Promise<any[]> => {
+  try {
+    // Get doctors with their settings
     const { data: doctorSettings, error } = await supabase
       .from("doctor_settings")
       .select("*");
@@ -48,17 +162,29 @@ const getDoctorsWithSettings = async () => {
       return [];
     }
 
-    // Get user metadata for all doctors
-    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
-    
-    if (usersError) {
-      console.error("Error fetching users:", usersError);
-      return [];
+    // Get user metadata for all doctors - using admin.listUsers() with proper error handling
+    let users: any[] = [];
+    try {
+      const { data: usersData, error: usersError } = await supabase.auth.admin.listUsers();
+      
+      if (usersError) {
+        console.error("Error fetching users:", usersError);
+        return [];
+      }
+      
+      users = usersData?.users || [];
+    } catch (adminError) {
+      console.error("Admin listUsers not available, trying alternative approach:", adminError);
+      // Alternative: We can't get user details without admin access, so we'll work with just the settings
+      return doctorSettings.map(settings => ({
+        ...settings,
+        user: { id: settings.user_id, email: 'doctor@example.com' } // Placeholder
+      }));
     }
 
     // Combine doctor settings with user data
     const doctorsWithSettings = doctorSettings.map(settings => {
-      const user = users?.find(u => u.id === settings.user_id);
+      const user = users.find((u: any) => u.id === settings.user_id);
       return {
         ...settings,
         user: user || null
