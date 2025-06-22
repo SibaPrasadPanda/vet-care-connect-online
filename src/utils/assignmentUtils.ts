@@ -124,14 +124,8 @@ const checkAvailableDoctors = async () => {
     
     // Check each doctor's availability
     doctors.forEach(doctor => {
-      // Ensure doctor.user is an object with an email property
-      let doctorEmail = 'unknown';
-      if (doctor.user && 
-          typeof doctor.user === 'object' && 
-          doctor.user !== null && 
-          'email' in doctor.user) {
-        doctorEmail = doctor.user?.email;
-      }
+      // Safely get doctor email with proper null checking
+      const doctorEmail = doctor.user?.email || 'unknown';
       
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       
@@ -144,7 +138,6 @@ const checkAvailableDoctors = async () => {
       const appointmentHours = doctor.appointment_start_time && doctor.appointment_end_time ? 
         `${doctor.appointment_start_time} - ${doctor.appointment_end_time}` : 'not set';
       
-      // Fix for TS errors: Add null check for doctor.user
       console.log(`- Available days: ${availableDays}`);
       console.log(`- Consultation hours: ${consultationHours}`);
       console.log(`- Appointment hours: ${appointmentHours}`);
@@ -162,7 +155,6 @@ const checkAvailableDoctors = async () => {
         currentTime >= doctor.consultation_start_time && 
         currentTime <= doctor.consultation_end_time;
         
-      // Fix for TS errors: Add null check for doctor.user
       console.log(`- Current time ${currentTime} is ${isWithinConsultationHours ? 'within' : 'outside'} consultation hours`);
       
       if (!isWithinConsultationHours) {
@@ -274,14 +266,8 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
     let reasons = [];
     
     for (const doctor of doctors) {
-      // Ensure doctor.user is an object with an email property
-      let doctorEmail = 'unknown';
-      if (doctor.user && 
-          typeof doctor.user === 'object' && 
-          doctor.user !== null && 
-          'email' in doctor.user) {
-        doctorEmail = doctor.user?.email;
-      }
+      // Safely get doctor email with proper null checking
+      const doctorEmail = doctor.user?.email || 'unknown';
       
       const isAvailableDay = doctor.days_available && doctor.days_available.includes(currentDay);
       // Add null check for consultation_start_time and consultation_end_time
@@ -292,13 +278,11 @@ export const diagnoseConsultationAssignment = async (consultationId: string) => 
         currentTime <= doctor.consultation_end_time;
       
       if (!isAvailableDay) {
-        // Fix for TS errors: Add null check for doctor.user
         reasons.push(`Doctor ${doctorEmail} is not available on ${currentDay}.`);
         continue;
       }
       
       if (!isWithinConsultationHours) {
-        // Fix for TS errors: Add null check for doctor.user
         reasons.push(`Doctor ${doctorEmail} is not available at ${currentTime} (outside their hours of ${doctor.consultation_start_time || 'not set'}-${doctor.consultation_end_time || 'not set'}).`);
         continue;
       }
