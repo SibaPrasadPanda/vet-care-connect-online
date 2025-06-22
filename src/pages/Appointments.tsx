@@ -29,7 +29,7 @@ const Appointments = () => {
         const userRole = user?.user_metadata?.role;
         let query = supabase
           .from("appointments")
-          .select("*, doctor:doctor_id(id, user_metadata->name)")
+          .select("*")
           .order("created_at", { ascending: false });
 
         // Filter by user role
