@@ -1,3 +1,4 @@
+
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -518,28 +519,33 @@ const DoctorDashboard = () => {
           setNextAppointmentTime(appointments[0].preferred_time);
         }
         
-        // Mock urgent cases data for now
-        setUrgentCases([
-          { 
-            id: "1", 
-            title: "Severe vomiting and lethargy", 
-            date: "Apr 21, 2025 - 2 hours ago", 
-            urgency: "high",
-            owner: "Michael Thomas", 
-            petName: "Rocky", 
-            petType: "Dog" 
-          },
-          { 
-            id: "2", 
-            title: "Limping after fall", 
-            date: "Apr 21, 2025 - 4 hours ago", 
-            urgency: "medium",
-            owner: "Jennifer Adams", 
-            petName: "Whiskers", 
-            petType: "Cat" 
-          },
-        ]);
+        // Fetch urgent cases from consultations marked as high priority or recent
+        const { data: urgentConsultations, error: urgentError } = await supabase
+          .from("consultations")
+          .select("*")
+          .eq("doctor_id", user.id)
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (urgentError) throw urgentError;
+
+        // Transform consultations into urgent cases format
+        const transformedUrgentCases = urgentConsultations?.map(consultation => ({
+          id: consultation.id,
+          title: consultation.symptoms.length > 50 ? consultation.symptoms.substring(0, 50) + "..." : consultation.symptoms,
+          date: new Date(consultation.created_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric"
+          }) + " - " + getTimeAgo(consultation.created_at),
+          urgency: getUrgencyLevel(consultation.symptoms, consultation.created_at),
+          owner: "Patient", // We don't have owner name in current schema
+          petName: consultation.pet_name,
+          petType: "Pet" // We don't have pet type in current schema
+        })) || [];
         
+        setUrgentCases(transformedUrgentCases);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching doctor data:", error);
@@ -554,6 +560,33 @@ const DoctorDashboard = () => {
 
     fetchDoctorData();
   }, [user, toast]);
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return "less than an hour ago";
+    if (diffInHours === 1) return "1 hour ago";
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays === 1) return "1 day ago";
+    return `${diffInDays} days ago`;
+  };
+
+  const getUrgencyLevel = (symptoms: string, createdAt: string) => {
+    const urgentKeywords = ['severe', 'emergency', 'critical', 'urgent', 'bleeding', 'pain', 'vomiting', 'lethargy'];
+    const hasUrgentSymptoms = urgentKeywords.some(keyword => 
+      symptoms.toLowerCase().includes(keyword)
+    );
+    
+    const hoursOld = (new Date().getTime() - new Date(createdAt).getTime()) / (1000 * 60 * 60);
+    
+    if (hasUrgentSymptoms || hoursOld < 2) return "high";
+    if (hoursOld < 12) return "medium";
+    return "low";
+  };
 
   return (
     <div className="grid gap-6">
@@ -590,20 +623,20 @@ const DoctorDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2</div>
+            <div className="text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
-              Waiting for agent assignment
+              No field visits assigned
             </p>
           </CardContent>
         </Card>
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Prescriptions Written</CardTitle>
+            <CardTitle className="text-sm font-medium">Cases Completed</CardTitle>
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">42</div>
+            <div className="text-2xl font-bold">-</div>
             <p className="text-xs text-muted-foreground">
               This month
             </p>
@@ -611,63 +644,66 @@ const DoctorDashboard = () => {
         </Card>
       </div>
       
-      <h2 className="text-xl font-semibold mt-6 mb-4">Urgent Cases</h2>
+      <h2 className="text-xl font-semibold mt-6 mb-4">Recent Cases</h2>
       
       <div className="space-y-4">
-        {[
-          { 
-            id: "1", 
-            title: "Severe vomiting and lethargy", 
-            date: "Apr 21, 2025 - 2 hours ago", 
-            urgency: "high",
-            owner: "Michael Thomas", 
-            petName: "Rocky", 
-            petType: "Dog" 
-          },
-          { 
-            id: "2", 
-            title: "Limping after fall", 
-            date: "Apr 21, 2025 - 4 hours ago", 
-            urgency: "medium",
-            owner: "Jennifer Adams", 
-            petName: "Whiskers", 
-            petType: "Cat" 
-          },
-        ].map((case_) => (
-          <Card key={case_.id} className="hover:bg-muted/50 transition-colors">
-            <CardContent className="p-6 flex justify-between items-center">
-              <div>
-                <div className="font-medium">{case_.title}</div>
-                <div className="text-sm text-muted-foreground">
-                  {case_.petName} ({case_.petType}) • Owner: {case_.owner} • {case_.date}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {case_.urgency === "high" ? (
-                  <span className="flex items-center text-sm text-red-600">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    High Priority
-                  </span>
-                ) : (
-                  <span className="flex items-center text-sm text-amber-600">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Medium Priority
-                  </span>
-                )}
-                <Button asChild variant="default" size="sm" className="bg-vet-primary hover:bg-vet-dark">
-                  <Link to={`/cases/${case_.id}`}>
-                    Review Now
-                  </Link>
-                </Button>
+        {loading ? (
+          <Card>
+            <CardContent className="p-6">
+              <div className="animate-pulse space-y-4">
+                <div className="h-4 bg-muted rounded w-3/4"></div>
+                <div className="h-4 bg-muted rounded w-1/2"></div>
               </div>
             </CardContent>
           </Card>
-        ))}
+        ) : urgentCases.length > 0 ? (
+          urgentCases.map((case_) => (
+            <Card key={case_.id} className="hover:bg-muted/50 transition-colors">
+              <CardContent className="p-6 flex justify-between items-center">
+                <div>
+                  <div className="font-medium">{case_.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {case_.petName} • {case_.date}
+                  </div>
+                </div>
+                <div className="flex items-center gap-4">
+                  {case_.urgency === "high" ? (
+                    <span className="flex items-center text-sm text-red-600">
+                      <AlertCircle className="h-3 w-3 mr-1" />
+                      High Priority
+                    </span>
+                  ) : case_.urgency === "medium" ? (
+                    <span className="flex items-center text-sm text-amber-600">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Medium Priority
+                    </span>
+                  ) : (
+                    <span className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-3 w-3 mr-1" />
+                      Low Priority
+                    </span>
+                  )}
+                  <Button asChild variant="default" size="sm" className="bg-vet-primary hover:bg-vet-dark">
+                    <Link to={`/consultations/${case_.id}`}>
+                      Review Now
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <p className="text-muted-foreground">No pending cases at the moment</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
       
       <div className="flex justify-center mt-4">
         <Button asChild variant="outline">
-          <Link to="/cases">
+          <Link to="/consultations">
             View All Cases
           </Link>
         </Button>
