@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 
 export const assignSingleItem = async () => {
@@ -9,13 +10,14 @@ export const assignSingleItem = async () => {
       return { success: false, message: "Failed to assign items to doctors." };
     }
     
-    const assigned = data;
+    // Type assertion for the returned data
+    const assigned = data as { consultations?: number; appointments?: number } | null;
     const totalAssigned = (assigned?.consultations || 0) + (assigned?.appointments || 0);
     
     if (totalAssigned > 0) {
       return { 
         success: true, 
-        message: `Successfully assigned ${assigned.consultations} consultations and ${assigned.appointments} appointments to available doctors.` 
+        message: `Successfully assigned ${assigned?.consultations || 0} consultations and ${assigned?.appointments || 0} appointments to available doctors.` 
       };
     } else {
       return { 
@@ -47,7 +49,6 @@ const getDoctorsWithSettings = async () => {
     }
 
     // Get user metadata for all doctors
-    const doctorIds = doctorSettings.map(ds => ds.user_id);
     const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
     
     if (usersError) {

@@ -1,4 +1,3 @@
-
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -473,15 +472,14 @@ const DoctorDashboard = () => {
   const { user } = useAuth();
   const [pendingCases, setPendingCases] = useState(0);
   const [todayAppointments, setTodayAppointments] = useState(0);
+  const [completedCases, setCompletedCases] = useState(0);
   const [nextAppointmentTime, setNextAppointmentTime] = useState<string | null>(null);
-  const [urgentCases, setUrgentCases] = useState<Array<{
+  const [recentCases, setRecentCases] = useState<Array<{
     id: string;
     title: string;
     date: string;
     urgency: string;
-    owner: string;
     petName: string;
-    petType: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -491,6 +489,8 @@ const DoctorDashboard = () => {
       if (!user?.id) return;
 
       try {
+        setLoading(true);
+        
         // Fetch assigned consultations count
         const { data: consultations, error: consultationsError } = await supabase
           .from("consultations")
@@ -511,16 +511,30 @@ const DoctorDashboard = () => {
 
         if (appointmentsError) throw appointmentsError;
         
+        // Fetch completed cases this month
+        const currentMonth = new Date();
+        const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).toISOString();
+        
+        const { data: completedConsultations, error: completedError } = await supabase
+          .from("consultations")
+          .select("*")
+          .eq("doctor_id", user.id)
+          .eq("status", "completed")
+          .gte("created_at", firstDayOfMonth);
+
+        if (completedError) throw completedError;
+        
         // Update state with fetched data
         setPendingCases(consultations?.length || 0);
         setTodayAppointments(appointments?.length || 0);
+        setCompletedCases(completedConsultations?.length || 0);
         
         if (appointments && appointments.length > 0) {
           setNextAppointmentTime(appointments[0].preferred_time);
         }
         
-        // Fetch urgent cases from consultations marked as high priority or recent
-        const { data: urgentConsultations, error: urgentError } = await supabase
+        // Fetch recent cases from consultations
+        const { data: recentConsultations, error: recentError } = await supabase
           .from("consultations")
           .select("*")
           .eq("doctor_id", user.id)
@@ -528,10 +542,10 @@ const DoctorDashboard = () => {
           .order("created_at", { ascending: false })
           .limit(5);
 
-        if (urgentError) throw urgentError;
+        if (recentError) throw recentError;
 
-        // Transform consultations into urgent cases format
-        const transformedUrgentCases = urgentConsultations?.map(consultation => ({
+        // Transform consultations into recent cases format
+        const transformedRecentCases = recentConsultations?.map(consultation => ({
           id: consultation.id,
           title: consultation.symptoms.length > 50 ? consultation.symptoms.substring(0, 50) + "..." : consultation.symptoms,
           date: new Date(consultation.created_at).toLocaleDateString("en-US", {
@@ -540,12 +554,10 @@ const DoctorDashboard = () => {
             year: "numeric"
           }) + " - " + getTimeAgo(consultation.created_at),
           urgency: getUrgencyLevel(consultation.symptoms, consultation.created_at),
-          owner: "Patient", // We don't have owner name in current schema
           petName: consultation.pet_name,
-          petType: "Pet" // We don't have pet type in current schema
         })) || [];
         
-        setUrgentCases(transformedUrgentCases);
+        setRecentCases(transformedRecentCases);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching doctor data:", error);
@@ -636,7 +648,7 @@ const DoctorDashboard = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">-</div>
+            <div className="text-2xl font-bold">{loading ? "..." : completedCases}</div>
             <p className="text-xs text-muted-foreground">
               This month
             </p>
@@ -656,8 +668,8 @@ const DoctorDashboard = () => {
               </div>
             </CardContent>
           </Card>
-        ) : urgentCases.length > 0 ? (
-          urgentCases.map((case_) => (
+        ) : recentCases.length > 0 ? (
+          recentCases.map((case_) => (
             <Card key={case_.id} className="hover:bg-muted/50 transition-colors">
               <CardContent className="p-6 flex justify-between items-center">
                 <div>
