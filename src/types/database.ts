@@ -1,4 +1,3 @@
-
 export type Consultation = {
   id: string;
   created_at: string;
@@ -9,6 +8,7 @@ export type Consultation = {
   attachments?: string[];
   doctor_id?: string;
   assigned_at?: string;
+  prescription?: string;
 };
 
 export type Appointment = {

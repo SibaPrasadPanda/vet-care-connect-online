@@ -56,6 +56,7 @@ export type Database = {
           doctor_id: string | null
           id: string
           pet_name: string
+          prescription: string | null
           status: string
           symptoms: string
           user_id: string
@@ -67,6 +68,7 @@ export type Database = {
           doctor_id?: string | null
           id?: string
           pet_name: string
+          prescription?: string | null
           status: string
           symptoms: string
           user_id: string
@@ -78,6 +80,7 @@ export type Database = {
           doctor_id?: string | null
           id?: string
           pet_name?: string
+          prescription?: string | null
           status?: string
           symptoms?: string
           user_id?: string

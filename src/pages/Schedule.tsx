@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -181,6 +180,10 @@ const Schedule = () => {
     }
   };
 
+  const navigateToWritePrescription = (consultationId: string) => {
+    window.location.href = `/write-prescription?consultationId=${consultationId}`;
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -351,6 +354,15 @@ const Schedule = () => {
                         <p className="text-sm text-muted-foreground">{consultation.symptoms}</p>
                       </div>
                       
+                      {consultation.prescription && (
+                        <div>
+                          <h4 className="font-medium mb-2">Prescription</h4>
+                          <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                            {consultation.prescription}
+                          </p>
+                        </div>
+                      )}
+                      
                       <div className="flex gap-2">
                         {consultation.status === "pending" && (
                           <Button 
@@ -361,13 +373,21 @@ const Schedule = () => {
                           </Button>
                         )}
                         {consultation.status === "in_progress" && (
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => updateConsultationStatus(consultation.id, "completed")}
-                          >
-                            Mark Complete
-                          </Button>
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => updateConsultationStatus(consultation.id, "completed")}
+                            >
+                              Mark Complete
+                            </Button>
+                            <Button 
+                              size="sm"
+                              onClick={() => navigateToWritePrescription(consultation.id)}
+                            >
+                              Write Prescription
+                            </Button>
+                          </>
                         )}
                       </div>
                     </CardContent>
