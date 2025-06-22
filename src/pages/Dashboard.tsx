@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Consultation, Appointment } from "@/types/database";
 import { AdminDashboard } from './AdminDashboard';
 import { assignSingleItem } from '@/utils/assignmentUtils';
+import { autoAssignToDoctorOnDashboardLoad } from '@/utils/doctorAssignmentUtils';
 
 // New function to assign pending consultations/appointments to doctors
 const assignToAvailableDoctors = async () => {
@@ -482,6 +483,7 @@ const DoctorDashboard = () => {
     petName: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
+  const [autoAssignmentMessage, setAutoAssignmentMessage] = useState<string>("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -491,7 +493,19 @@ const DoctorDashboard = () => {
       try {
         setLoading(true);
         
-        // Fetch assigned consultations count
+        // Auto-assign available consultations and appointments first
+        console.log("Starting auto-assignment for doctor dashboard...");
+        const assignmentResult = await autoAssignToDoctorOnDashboardLoad(user.id);
+        
+        if (assignmentResult.success && (assignmentResult.consultations > 0 || assignmentResult.appointments > 0)) {
+          setAutoAssignmentMessage(assignmentResult.message);
+          toast({
+            title: "Auto-Assignment Complete",
+            description: assignmentResult.message,
+          });
+        }
+        
+        // Fetch assigned consultations count (pending status)
         const { data: consultations, error: consultationsError } = await supabase
           .from("consultations")
           .select("*")
@@ -602,6 +616,17 @@ const DoctorDashboard = () => {
 
   return (
     <div className="grid gap-6">
+      {autoAssignmentMessage && (
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <p className="text-sm text-green-800">{autoAssignmentMessage}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
