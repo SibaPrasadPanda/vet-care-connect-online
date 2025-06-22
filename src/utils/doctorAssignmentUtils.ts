@@ -17,6 +17,8 @@ export const autoAssignToDoctorOnDashboardLoad = async (doctorId: string) => {
       return { success: false, message: "Doctor settings not found" };
     }
 
+    console.log("Doctor settings found:", doctorSettings);
+
     let assignedConsultations = 0;
     let assignedAppointments = 0;
 
@@ -54,8 +56,12 @@ export const autoAssignToDoctorOnDashboardLoad = async (doctorId: string) => {
 
 const autoAssignConsultations = async (doctorId: string, doctorSettings: any) => {
   try {
+    console.log("Starting consultation assignment for doctor:", doctorId);
+
     // Check today's assigned consultations count
     const today = new Date().toISOString().split('T')[0];
+    console.log("Checking consultations for today:", today);
+    
     const { data: todaysConsultations, error: countError } = await supabase
       .from("consultations")
       .select("id")
@@ -69,6 +75,8 @@ const autoAssignConsultations = async (doctorId: string, doctorSettings: any) =>
     }
 
     const currentCount = todaysConsultations?.length || 0;
+    console.log(`Doctor has ${currentCount} consultations assigned today, max allowed: ${doctorSettings.max_consultations_per_day}`);
+    
     const availableSlots = doctorSettings.max_consultations_per_day - currentCount;
 
     if (availableSlots <= 0) {
@@ -76,24 +84,35 @@ const autoAssignConsultations = async (doctorId: string, doctorSettings: any) =>
       return { assigned: 0 };
     }
 
-    // Get unassigned consultations (oldest first)
+    // Get unassigned consultations (oldest first) - Fixed query
+    console.log("Fetching unassigned consultations...");
     const { data: unassignedConsultations, error: fetchError } = await supabase
       .from("consultations")
       .select("*")
       .is("doctor_id", null)
-      .is("assigned_at", null)
       .eq("status", "pending")
       .order("created_at", { ascending: true })
       .limit(availableSlots);
 
-    if (fetchError || !unassignedConsultations?.length) {
+    console.log("Unassigned consultations query result:", { data: unassignedConsultations, error: fetchError });
+
+    if (fetchError) {
+      console.error("Error fetching unassigned consultations:", fetchError);
+      return { assigned: 0 };
+    }
+
+    if (!unassignedConsultations?.length) {
       console.log("No unassigned consultations found");
       return { assigned: 0 };
     }
 
+    console.log(`Found ${unassignedConsultations.length} unassigned consultations`);
+
     // Assign consultations
     let assigned = 0;
     for (const consultation of unassignedConsultations) {
+      console.log(`Attempting to assign consultation ${consultation.id}`);
+      
       const { error: assignError } = await supabase
         .from("consultations")
         .update({
@@ -104,12 +123,13 @@ const autoAssignConsultations = async (doctorId: string, doctorSettings: any) =>
 
       if (!assignError) {
         assigned++;
-        console.log(`Assigned consultation ${consultation.id} to doctor ${doctorId}`);
+        console.log(`Successfully assigned consultation ${consultation.id} to doctor ${doctorId}`);
       } else {
         console.error("Error assigning consultation:", assignError);
       }
     }
 
+    console.log(`Total consultations assigned: ${assigned}`);
     return { assigned };
 
   } catch (error) {
@@ -120,35 +140,53 @@ const autoAssignConsultations = async (doctorId: string, doctorSettings: any) =>
 
 const autoAssignAppointments = async (doctorId: string, doctorSettings: any) => {
   try {
-    // Get unassigned appointments (oldest first)
+    console.log("Starting appointment assignment for doctor:", doctorId);
+
+    // Get unassigned appointments (oldest first) - Fixed query
+    console.log("Fetching unassigned appointments...");
     const { data: unassignedAppointments, error: fetchError } = await supabase
       .from("appointments")
       .select("*")
       .is("doctor_id", null)
-      .is("assigned_at", null)
       .eq("status", "pending")
       .order("created_at", { ascending: true });
 
-    if (fetchError || !unassignedAppointments?.length) {
+    console.log("Unassigned appointments query result:", { data: unassignedAppointments, error: fetchError });
+
+    if (fetchError) {
+      console.error("Error fetching unassigned appointments:", fetchError);
+      return { assigned: 0 };
+    }
+
+    if (!unassignedAppointments?.length) {
       console.log("No unassigned appointments found");
       return { assigned: 0 };
     }
+
+    console.log(`Found ${unassignedAppointments.length} unassigned appointments`);
 
     let assigned = 0;
 
     // Process each appointment
     for (const appointment of unassignedAppointments) {
+      console.log(`Processing appointment ${appointment.id} for ${appointment.preferred_date} at ${appointment.preferred_time}`);
+      
       // Check if preferred_time matches doctor's availability
       const appointmentTime = appointment.preferred_time;
       const doctorStartTime = doctorSettings.appointment_start_time;
       const doctorEndTime = doctorSettings.appointment_end_time;
 
+      console.log(`Checking time match: ${appointmentTime} between ${doctorStartTime} and ${doctorEndTime}`);
+
       if (appointmentTime < doctorStartTime || appointmentTime > doctorEndTime) {
+        console.log(`Appointment time ${appointmentTime} is outside doctor's hours (${doctorStartTime}-${doctorEndTime})`);
         continue; // Skip appointments outside doctor's hours
       }
 
       // Check appointments count for the preferred date
       const appointmentDate = appointment.preferred_date;
+      console.log(`Checking appointment count for date: ${appointmentDate}`);
+      
       const { data: dateAppointments, error: countError } = await supabase
         .from("appointments")
         .select("id")
@@ -161,12 +199,15 @@ const autoAssignAppointments = async (doctorId: string, doctorSettings: any) => 
       }
 
       const currentDateCount = dateAppointments?.length || 0;
+      console.log(`Doctor has ${currentDateCount} appointments on ${appointmentDate}, max allowed: ${doctorSettings.max_appointments_per_day}`);
       
       if (currentDateCount >= doctorSettings.max_appointments_per_day) {
+        console.log(`Doctor has reached appointment limit for ${appointmentDate}`);
         continue; // Skip if doctor has reached limit for this date
       }
 
       // Assign the appointment
+      console.log(`Attempting to assign appointment ${appointment.id}`);
       const { error: assignError } = await supabase
         .from("appointments")
         .update({
@@ -177,12 +218,13 @@ const autoAssignAppointments = async (doctorId: string, doctorSettings: any) => 
 
       if (!assignError) {
         assigned++;
-        console.log(`Assigned appointment ${appointment.id} to doctor ${doctorId} for ${appointmentDate} at ${appointmentTime}`);
+        console.log(`Successfully assigned appointment ${appointment.id} to doctor ${doctorId} for ${appointmentDate} at ${appointmentTime}`);
       } else {
         console.error("Error assigning appointment:", assignError);
       }
     }
 
+    console.log(`Total appointments assigned: ${assigned}`);
     return { assigned };
 
   } catch (error) {
