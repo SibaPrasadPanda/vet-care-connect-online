@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Consultation, Appointment } from "@/types/database";
 import { AdminDashboard } from './AdminDashboard';
 import { assignSingleItem } from '@/utils/assignmentUtils';
-import { autoAssignToDoctorOnDashboardLoad } from '@/utils/doctorAssignmentUtils';
+import { autoAssignToDoctorOnDashboardLoad } from '@/utils/doctorAssignment';
 
 // New function to assign pending consultations/appointments to doctors
 const assignToAvailableDoctors = async () => {
