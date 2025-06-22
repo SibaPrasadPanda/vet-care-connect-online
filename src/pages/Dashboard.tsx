@@ -484,14 +484,16 @@ const DoctorDashboard = () => {
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [autoAssignmentMessage, setAutoAssignmentMessage] = useState<string>("");
+  const [autoAssignmentRan, setAutoAssignmentRan] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     const fetchDoctorData = async () => {
-      if (!user?.id) return;
+      if (!user?.id || autoAssignmentRan) return;
 
       try {
         setLoading(true);
+        setAutoAssignmentRan(true); // Prevent multiple calls
         
         // Auto-assign available consultations and appointments first
         console.log("Starting auto-assignment for doctor dashboard...");
@@ -585,7 +587,7 @@ const DoctorDashboard = () => {
     };
 
     fetchDoctorData();
-  }, [user, toast]);
+  }, [user, toast, autoAssignmentRan]);
 
   const getTimeAgo = (dateString: string) => {
     const now = new Date();

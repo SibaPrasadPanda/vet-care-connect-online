@@ -84,12 +84,12 @@ const autoAssignConsultations = async (doctorId: string, doctorSettings: any) =>
       return { assigned: 0 };
     }
 
-    // Get unassigned consultations (oldest first) - Fixed query
+    // Get unassigned consultations (oldest first) - Fixed query by removing the problematic filter
     console.log("Fetching unassigned consultations...");
     const { data: unassignedConsultations, error: fetchError } = await supabase
       .from("consultations")
       .select("*")
-      .is("doctor_id", null)
+      .filter("doctor_id", "is", null)
       .eq("status", "pending")
       .order("created_at", { ascending: true })
       .limit(availableSlots);
@@ -147,7 +147,7 @@ const autoAssignAppointments = async (doctorId: string, doctorSettings: any) => 
     const { data: unassignedAppointments, error: fetchError } = await supabase
       .from("appointments")
       .select("*")
-      .is("doctor_id", null)
+      .filter("doctor_id", "is", null)
       .eq("status", "pending")
       .order("created_at", { ascending: true });
 
