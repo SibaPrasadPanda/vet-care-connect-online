@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -452,14 +451,16 @@ const Schedule = () => {
                         </div>
                       )}
                       
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm"
-                          onClick={() => navigateToWriteAppointmentPrescription(appointment.id)}
-                        >
-                          Write Prescription
-                        </Button>
-                      </div>
+                      {appointment.status !== "completed" && (
+                        <div className="flex gap-2">
+                          <Button 
+                            size="sm"
+                            onClick={() => navigateToWriteAppointmentPrescription(appointment.id)}
+                          >
+                            Write Prescription
+                          </Button>
+                        </div>
+                      )}
                       
                       <div className="text-xs text-muted-foreground">
                         Requested: {formatDateTime(appointment.created_at)}
