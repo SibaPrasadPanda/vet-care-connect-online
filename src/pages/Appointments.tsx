@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -162,6 +161,14 @@ const Appointments = () => {
                         : appointment.reason}
                     </p>
                   </div>
+                  {appointment.prescription && (
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-500 mb-1 mt-2">Prescription</h4>
+                      <p className="text-sm whitespace-pre-wrap">
+                        {appointment.prescription}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-1" />

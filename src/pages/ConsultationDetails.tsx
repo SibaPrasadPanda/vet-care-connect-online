@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -182,10 +181,12 @@ const ConsultationDetails = () => {
             {consultation.status === "completed" ? (
               <div>
                 <h3 className="text-lg font-semibold mb-2">Veterinarian Response</h3>
-                <div className="p-4 bg-green-50 border border-green-100 rounded-md">
-                  <p className="text-muted-foreground">
-                    This consultation has been completed. The veterinarian's response should appear here.
-                  </p>
+                <div className="p-4 bg-muted border rounded-md whitespace-pre-wrap">
+                  {consultation.prescription ? consultation.prescription : (
+                    <p className="text-muted-foreground">
+                      This consultation has been completed. The veterinarian's response should appear here.
+                    </p>
+                  )}
                 </div>
               </div>
             ) : (
@@ -200,7 +201,7 @@ const ConsultationDetails = () => {
             )}
           </CardContent>
           <CardFooter className="flex justify-end pt-4 border-t">
-            {consultation.status === "completed" && (
+            {/* {consultation.status === "completed" && (
               <Button 
                 variant="outline" 
                 className="mr-2"
@@ -208,7 +209,7 @@ const ConsultationDetails = () => {
               >
                 View Prescriptions
               </Button>
-            )}
+            )} */}
             <Button 
               onClick={() => navigate("/consultations")}
               variant="default"

@@ -148,7 +148,7 @@ const Consultations = () => {
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-1" />
-                      {consultation.status === "pending" ? "Waiting for vet" : "Vet reviewing"}
+                      {consultation.status === "pending" ? "Waiting for vet" : consultation.status==="in_progress" ? "Consultation in progress" : "Consultation completed"}
                     </div>
                     <Button 
                       variant="outline" 
