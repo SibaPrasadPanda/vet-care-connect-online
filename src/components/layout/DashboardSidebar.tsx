@@ -1,4 +1,3 @@
-
 import { 
   Sidebar, 
   SidebarContent, 
@@ -46,21 +45,21 @@ export const DashboardSidebar = () => {
     
     // Patient specific items
     const patientItems = [
-      {
-        title: 'My Pets',
-        url: '/pets',
-        icon: PawPrint,
-      },
+      // {
+      //   title: 'My Pets',
+      //   url: '/pets',
+      //   icon: PawPrint,
+      // },
       {
         title: 'Consultations',
         url: '/consultations',
         icon: MessageSquare,
       },
-      {
-        title: 'Prescriptions',
-        url: '/prescriptions',
-        icon: FileText,
-      },
+      // {
+      //   title: 'Prescriptions',
+      //   url: '/prescriptions',
+      //   icon: FileText,
+      // },
       {
         title: 'Appointments',
         url: '/appointments',
