@@ -18,6 +18,7 @@ export type Database = {
           pet_name: string
           preferred_date: string
           preferred_time: string
+          prescription: string | null
           reason: string
           status: string
           user_id: string
@@ -30,6 +31,7 @@ export type Database = {
           pet_name: string
           preferred_date: string
           preferred_time: string
+          prescription?: string | null
           reason: string
           status: string
           user_id: string
@@ -42,6 +44,7 @@ export type Database = {
           pet_name?: string
           preferred_date?: string
           preferred_time?: string
+          prescription?: string | null
           reason?: string
           status?: string
           user_id?: string

@@ -22,6 +22,7 @@ export type Appointment = {
   status: 'pending' | 'confirmed' | 'cancelled';
   doctor_id?: string;
   assigned_at?: string;
+  prescription?: string;
 };
 
 export type DoctorSettings = {

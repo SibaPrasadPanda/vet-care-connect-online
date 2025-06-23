@@ -184,6 +184,10 @@ const Schedule = () => {
     window.location.href = `/write-prescription?consultationId=${consultationId}`;
   };
 
+  const navigateToWriteAppointmentPrescription = (appointmentId: string) => {
+    window.location.href = `/write-appointment-prescription?appointmentId=${appointmentId}`;
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -432,6 +436,24 @@ const Schedule = () => {
                       <div>
                         <h4 className="font-medium mb-2">Reason for Visit</h4>
                         <p className="text-sm text-muted-foreground">{appointment.reason}</p>
+                      </div>
+                      
+                      {appointment.prescription && (
+                        <div>
+                          <h4 className="font-medium mb-2">Prescription</h4>
+                          <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                            {appointment.prescription}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm"
+                          onClick={() => navigateToWriteAppointmentPrescription(appointment.id)}
+                        >
+                          Write Prescription
+                        </Button>
                       </div>
                       
                       <div className="text-xs text-muted-foreground">
