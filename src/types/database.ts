@@ -1,3 +1,4 @@
+
 export type Consultation = {
   id: string;
   created_at: string;
@@ -19,7 +20,7 @@ export type Appointment = {
   reason: string;
   preferred_date: string;
   preferred_time: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'assigned' | 'completed' | 'cancelled';
   doctor_id?: string;
   assigned_at?: string;
   prescription?: string;

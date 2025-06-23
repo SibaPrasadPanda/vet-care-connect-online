@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -59,7 +58,7 @@ const WriteAppointmentPrescription = () => {
 
         const typedAppointment = {
           ...data,
-          status: data.status as "pending" | "confirmed" | "cancelled"
+          status: data.status as "pending" | "assigned" | "completed" | "cancelled"
         };
 
         setAppointment(typedAppointment);
@@ -96,7 +95,8 @@ const WriteAppointmentPrescription = () => {
       const { error } = await supabase
         .from("appointments")
         .update({ 
-          prescription: prescription.trim()
+          prescription: prescription.trim(),
+          status: "completed"
         })
         .eq("id", appointment.id);
 
@@ -112,7 +112,7 @@ const WriteAppointmentPrescription = () => {
 
       toast({
         title: "Success",
-        description: "Prescription saved successfully.",
+        description: "Prescription saved successfully and appointment marked as completed.",
       });
 
       navigate("/schedule");
@@ -232,7 +232,7 @@ const WriteAppointmentPrescription = () => {
                   ) : (
                     <Save className="h-4 w-4" />
                   )}
-                  Save Prescription
+                  Save Prescription & Complete
                 </Button>
                 
                 <Button 

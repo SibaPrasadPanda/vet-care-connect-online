@@ -55,7 +55,7 @@ const Appointments = () => {
         console.log("Appointments fetched successfully:", data);
         const typedAppointments = data?.map(item => ({
           ...item,
-          status: item.status as "pending" | "confirmed" | "cancelled"
+          status: item.status as "pending" | "assigned" | "completed" | "cancelled"
         })) || [];
         
         setAppointments(typedAppointments);
@@ -78,7 +78,9 @@ const Appointments = () => {
     switch(status) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border border-yellow-200";
-      case "confirmed":
+      case "assigned":
+        return "bg-blue-100 text-blue-800 border border-blue-200";
+      case "completed":
         return "bg-green-100 text-green-800 border border-green-200";
       case "cancelled":
         return "bg-red-100 text-red-800 border border-red-200";
@@ -99,9 +101,11 @@ const Appointments = () => {
   const getStatusLabel = (status: string) => {
     switch(status) {
       case "pending":
-        return "Awaiting Confirmation";
-      case "confirmed":
-        return "Confirmed";
+        return "Awaiting Assignment";
+      case "assigned":
+        return "Assigned to Doctor";
+      case "completed":
+        return "Completed";
       case "cancelled":
         return "Cancelled";
       default:
@@ -161,8 +165,9 @@ const Appointments = () => {
                   <div className="flex items-center justify-between pt-2">
                     <div className="flex items-center text-sm text-gray-500">
                       <Clock className="h-4 w-4 mr-1" />
-                      {appointment.status === "pending" ? "Waiting for confirmation" : 
-                       appointment.status === "confirmed" ? "Visit confirmed" : "Cancelled"}
+                      {appointment.status === "pending" ? "Waiting for assignment" : 
+                       appointment.status === "assigned" ? "Doctor assigned" : 
+                       appointment.status === "completed" ? "Visit completed" : "Cancelled"}
                     </div>
                   </div>
                 </div>
