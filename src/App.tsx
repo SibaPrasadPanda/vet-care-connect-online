@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -35,29 +36,31 @@ function App() {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/consultations" element={<Consultations />} />
-            <Route path="/consultations/:id" element={<ConsultationDetails />} />
-            <Route path="/consultations/new" element={<NewConsultation />} />
-            <Route path="/appointments" element={<Appointments />} />
-            <Route path="/appointments/schedule" element={<ScheduleAppointment />} />
-            <Route path="/prescriptions" element={<Prescriptions />} />
-            <Route path="/pets" element={<Pets />} />
-            <Route path="/visits" element={<Visits />} />
-            <Route path="/cases" element={<Cases />} />
-            <Route path="/users" element={<Users />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/schedule" element={<Schedule />} />
-            <Route path="/write-prescription" element={<WritePrescription />} />
-            <Route path="/write-appointment-prescription" element={<WriteAppointmentPrescription />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/consultations" element={<Consultations />} />
+              <Route path="/consultations/:id" element={<ConsultationDetails />} />
+              <Route path="/consultations/new" element={<NewConsultation />} />
+              <Route path="/appointments" element={<Appointments />} />
+              <Route path="/appointments/schedule" element={<ScheduleAppointment />} />
+              <Route path="/prescriptions" element={<Prescriptions />} />
+              <Route path="/pets" element={<Pets />} />
+              <Route path="/visits" element={<Visits />} />
+              <Route path="/cases" element={<Cases />} />
+              <Route path="/users" element={<Users />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/write-prescription" element={<WritePrescription />} />
+              <Route path="/write-appointment-prescription" element={<WriteAppointmentPrescription />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
