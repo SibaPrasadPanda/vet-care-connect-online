@@ -79,11 +79,11 @@ export const DashboardSidebar = () => {
         url: '/cases',
         icon: ClipboardList,
       },
-      {
-        title: 'Write Prescriptions',
-        url: '/write-prescription',
-        icon: FileText,
-      },
+      // {
+      //   title: 'Write Prescriptions',
+      //   url: '/write-prescription',
+      //   icon: FileText,
+      // },
     ];
     
     // Agent specific items
