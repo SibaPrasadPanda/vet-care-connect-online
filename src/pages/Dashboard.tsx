@@ -129,15 +129,14 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
         ) || [];
         setActiveConsultationsCount(activeConsultations.length);
 
-        // Count upcoming appointments (pending or confirmed status and future date)
-        // Changed here to include pending appointments as well
+        // Count upcoming appointments (pending, assigned or completed status and future date)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         
         const upcomingAppointments = appointmentsData?.filter(appointment => {
           const appointmentDate = new Date(appointment.preferred_date);
           return (
-            (appointment.status === "confirmed" || appointment.status === "pending") && 
+            (appointment.status === "assigned" || appointment.status === "pending") && 
             appointmentDate >= today
           );
         }) || [];
@@ -167,7 +166,7 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
         
         const typedAppointments = appointmentsData?.map(item => ({
           ...item,
-          status: item.status as "pending" | "confirmed" | "cancelled"
+          status: item.status as "pending" | "assigned" | "completed" | "cancelled"
         })) || [];
         
         setRecentConsultations(typedConsultations);
@@ -422,11 +421,13 @@ const PatientDashboard = ({ userId }: { userId?: string }) => {
                       </div>
                       <div className={`px-3 py-1 rounded-full text-xs font-medium ${
                         appointment.status === "pending" ? "bg-yellow-100 text-yellow-800 border border-yellow-200" :
-                        appointment.status === "confirmed" ? "bg-green-100 text-green-800 border border-green-200" :
+                        appointment.status === "assigned" ? "bg-blue-100 text-blue-800 border border-blue-200" :
+                        appointment.status === "completed" ? "bg-green-100 text-green-800 border border-green-200" :
                         "bg-red-100 text-red-800 border border-red-200"
                       }`}>
-                        {appointment.status === "pending" ? "Awaiting Confirmation" :
-                         appointment.status === "confirmed" ? "Confirmed" : "Cancelled"}
+                        {appointment.status === "pending" ? "Awaiting Assignment" :
+                         appointment.status === "assigned" ? "Assigned to Doctor" :
+                         appointment.status === "completed" ? "Completed" : "Cancelled"}
                       </div>
                     </div>
                   </CardHeader>

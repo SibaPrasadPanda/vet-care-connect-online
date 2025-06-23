@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,7 +58,7 @@ const Schedule = () => {
         } else {
           const typedAppointments = appointmentsData?.map(item => ({
             ...item,
-            status: item.status as "pending" | "confirmed" | "cancelled"
+            status: item.status as "pending" | "assigned" | "completed" | "cancelled"
           })) || [];
           setAppointments(typedAppointments);
         }
@@ -93,7 +94,9 @@ const Schedule = () => {
       switch(status) {
         case "pending":
           return "bg-yellow-100 text-yellow-800 border border-yellow-200";
-        case "confirmed":
+        case "assigned":
+          return "bg-blue-100 text-blue-800 border border-blue-200";
+        case "completed":
           return "bg-green-100 text-green-800 border border-green-200";
         case "cancelled":
           return "bg-red-100 text-red-800 border border-red-200";
@@ -118,9 +121,11 @@ const Schedule = () => {
     } else {
       switch(status) {
         case "pending":
-          return "Awaiting Confirmation";
-        case "confirmed":
-          return "Confirmed";
+          return "Awaiting Assignment";
+        case "assigned":
+          return "Assigned to Doctor";
+        case "completed":
+          return "Completed";
         case "cancelled":
           return "Cancelled";
         default:
@@ -257,12 +262,12 @@ const Schedule = () => {
               
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Confirmed</CardTitle>
+                  <CardTitle className="text-sm font-medium">Completed</CardTitle>
                   <Phone className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {appointments.filter(a => a.status === "confirmed").length}
+                    {appointments.filter(a => a.status === "completed").length}
                   </div>
                 </CardContent>
               </Card>
